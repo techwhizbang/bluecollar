@@ -1,0 +1,10 @@
+development:
+  queues:
+    - uno
+    - dos
+    - tres
+test:
+  queues:
+    - quatro
+    - cinco
+    - seis
