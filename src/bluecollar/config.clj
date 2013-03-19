@@ -11,8 +11,14 @@
     )
   )
 
-(defrecord Configuration [relative-path environment] ILifecycle
+(def ^:private config-values (atom nil))
 
-  (start [this] (read-config this))
-  (stop [this] nil))
+(defn queues [] (:queues @config-values))
+(defn pool [] (:pool @config-values))
+
+(defrecord Configuration [relative-path environment]
+  ILifecycle
+  (start [this]
+    (reset! config-values (read-config this)))
+  (stop [this] (reset! config-values nil)))
 

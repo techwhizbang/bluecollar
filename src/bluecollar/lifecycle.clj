@@ -1,5 +1,6 @@
 (ns bluecollar.lifecycle)
 
 (defprotocol ILifecycle
-  (start [this] "start a component attached to a system")
-  (stop [this] "stop a component attached to a system"))
+  "A protocol for componentry that is startable and stoppable in an ISystem"
+  (start [this] "start a component that belongs to an ISystem")
+  (stop [this] "stop a component that belongs to an ISystem"))
