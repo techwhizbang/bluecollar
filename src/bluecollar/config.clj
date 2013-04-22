@@ -7,9 +7,7 @@
         env (:environment this)
         config (yaml/parse-string (slurp (clojure.java.io/resource relative-path)))
         env-config (env config)]
-    env-config
-    )
-  )
+    env-config))
 
 (def ^:private config-values (atom nil))
 

@@ -4,9 +4,19 @@ development:
     - {name: dos, priority: 9}
     - {name: tres, priority: 5}
   pool: 10
+  redis:
+    host: localhost
+    port: 6379
+    db: 12
+    timeout: 1
 test:
   queues:
     - {name: quatro, priority: 1, pool: 1}
     - {name: cinco, priority: 9}
     - {name: seis, priority: 5}
   pool: 1
+  redis:
+    host: localhost
+    port: 6379
+    db: 12
+    timeout: 1
