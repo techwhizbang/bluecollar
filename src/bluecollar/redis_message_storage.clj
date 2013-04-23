@@ -1,29 +1,31 @@
 (ns bluecollar.redis-message-storage
-  (:use bluecollar.message-storage)
   (:require [taoensso.carmine :as redis]))
 
-(def ^:private pool (atom nil))
-(def ^:private settings (atom nil))
+(defrecord RedisConnection [pool settings])
 
-(defmacro redis-connection [& body] 
-  `(redis/with-conn @pool @settings ~@body))
+(def ^:private pool-and-settings (atom nil))
 
-(defrecord RedisMessageStorage []
-  IMessageStorage
-  (connection-pool [this redis-config]
-    (do
-      (if (nil? @settings)
-      	(reset! settings (redis/make-conn-spec 
-                              :host (redis-config :host) 
-      												:timeout (redis-config :timeout) 
-      												:port (redis-config :port) 
-      												:db (redis-config :db))))
+(defmacro ^{:private true} with-redis-conn [redis-connection & body] 
+  `(redis/with-conn (:pool ~redis-connection) (:settings ~redis-connection) ~@body))
 
-      (if (nil? @pool)
-        (reset! pool (redis/make-conn-pool)))
+(defn redis-settings [{:keys [host port timeout db]}]
+  (redis/make-conn-spec :host host :timeout timeout :port port :db db))
 
-    ))
-  (flushdb [this] (redis-connection (redis/flushdb))) 
-  (push [this queue-name value] (redis-connection (redis/lpush queue-name value)))
-  (consume [this queue-name] (redis-connection (redis/rpop queue-name)))
-)
+(defn redis-pool []
+  (redis/make-conn-pool))
+
+(defn startup [config]
+  (reset! pool-and-settings 
+    (->RedisConnection (redis-pool) (redis-settings config))))
+
+(defn flushdb 
+  ([] (with-redis-conn @pool-and-settings (redis/flushdb)))
+  ([redis-conn] (with-redis-conn redis-conn (redis/flushdb))))
+
+(defn push 
+  ([queue-name value] (with-redis-conn @pool-and-settings (redis/lpush queue-name value)))
+  ([redis-conn queue-name value] (with-redis-conn redis-conn (redis/lpush queue-name value))))
+
+(defn consume 
+  ([queue-name] (with-redis-conn @pool-and-settings (redis/rpop queue-name)))
+  ([redis-conn queue-name] (with-redis-conn redis-conn (redis/rpop queue-name))))
