@@ -25,6 +25,13 @@
           value (consume "mocha")]
           (is (= value "latte"))))
 
+  (testing "places the consumed valued into the processing queue"
+    (let [_ (push "deep dish" "pizza")
+          _ (consume "deep dish")
+          values (lrange @processing-queue 0 0)]
+      (is (= (first values) "pizza")))
+    )
+
   (testing "uses a separate RedisConnection to consume a value"
     (let [redis-conn (->RedisConnection (redis-pool) (redis-settings redis-test-settings))
           _ (push redis-conn "salt" "pepper")]
