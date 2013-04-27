@@ -1,5 +1,6 @@
 (ns bluecollar.redis-message-storage
-  (:require [taoensso.carmine :as redis]))
+  (:require [taoensso.carmine :as redis])
+  (:refer-clojure :exclude [pop]))
 
 (defrecord RedisConnection [pool settings])
 
