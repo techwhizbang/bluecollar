@@ -1,8 +1,8 @@
-(ns bluecollar.job-processor-test
+(ns bluecollar.superintendent-test
   (:use clojure.test
         bluecollar.test-helper)
   (:require [bluecollar.redis-message-storage :as redis]
-            [bluecollar.job-processor :as processor]
+            [bluecollar.superintendent :as bossman]
             [bluecollar.job-plans :as plan]
             [cheshire.core :as json]))
 
@@ -20,11 +20,10 @@
 
 (deftest event-processor-worker-dispatch-test
   (testing "the perform method is called"
-    (let [_ (processor/start)
-          _ (future (processor/listen testing-queue-name))
+    (let [_ (future (bossman/start testing-queue-name))
           plan-as-json (plan/as-json 'bluecollar.fake-worker [3 2])
           _ (redis/push testing-queue-name plan-as-json)
           _ (Thread/sleep 1000)
-          _ (processor/stop)]
+          _ (bossman/stop)]
       )
     ))

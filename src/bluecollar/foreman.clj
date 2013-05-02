@@ -1,5 +1,7 @@
 (ns bluecollar.foreman
-  (:import java.util.concurrent.Executors))
+  (:import java.util.concurrent.Executors)
+  (:require [bluecollar.labor-union-rep :as labor-rep]
+            [bluecollar.job-plans :as plan]))
 
 (def ^:private thread-pool (atom nil))
 
@@ -26,7 +28,18 @@
   (do
     (stop-pool)))
 
-(defn dispatch-worker [func]
+(defn dispatch-worker [job-plan-fn]
   "Dispatches a worker to perform a job, namely the given function."
-  (.execute @thread-pool func))
+  (.execute @thread-pool job-plan-fn))
+
+(defn dispatch-work [job-plan-map]
+  "Given the job plan map, make sure the labor union rep
+   sees the worker's \"union card\", then dispatch a worker with a job plan."
+  (let [worker-ns (get job-plan-map "ns")
+        job-plan (plan/for-worker job-plan-map)]
+    (do
+      (labor-rep/union-card-check worker-ns)
+      (dispatch-worker job-plan))))
+
+
 

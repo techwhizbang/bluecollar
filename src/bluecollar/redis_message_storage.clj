@@ -57,7 +57,7 @@
   ([queue-name redis-conn] (with-redis-conn redis-conn (redis/rpoplpush queue-name @processing-queue))))
 
 (defn blocking-pop
-  "Behaves identically to consume but will wait indefinitely until something is pushed to the queue."
+  "Behaves identically to consume but will wait for timeout or until something is pushed to the queue."
   ([queue-name] (with-redis-conn @pool-and-settings (redis/brpoplpush queue-name @processing-queue 2)))
   ([queue-name timeout] (with-redis-conn @pool-and-settings (redis/brpoplpush queue-name @processing-queue timeout)))
   ([queue-name timeout redis-conn] (with-redis-conn redis-conn (redis/brpoplpush queue-name @processing-queue timeout))))
