@@ -1,22 +1,17 @@
 (ns bluecollar.redis-message-storage-test
-  (:use clojure.test)
+  (:use clojure.test
+        bluecollar.test-helper)
   (:require [bluecollar.redis-message-storage :as redis]))
 
-(def redis-test-settings {:host "127.0.0.1", :port 6379, :db 0, :timeout 1})
-
-(use-fixtures :each
-  (fn [f]
-    (redis/startup redis-test-settings)
-    (redis/flushdb)
-    (f)))
+(use-redis-test-setup)
 
 (deftest push-value-onto-queue
   (testing "pushes a String value onto a named queued"
     (is (= (redis/push "bacon" "eggs") 1)))
 
   (testing "uses a separate RedisConnection to push a String value"
-    (let [redis-conn (redis/->RedisConnection (redis/redis-pool) (redis/redis-settings redis-test-settings))]
-      (is (= (redis/push redis-conn "pancakes" "syrup") 1))
+    (let [redis-conn (redis/new-connection redis-test-settings)]
+      (is (= (redis/push "pancakes" "syrup" redis-conn) 1))
       )))
 
 (deftest pop-value-from-queue
@@ -33,9 +28,9 @@
     )
 
   (testing "uses a separate RedisConnection to pop a value"
-    (let [redis-conn (redis/->RedisConnection (redis/redis-pool) (redis/redis-settings redis-test-settings))
-          _ (redis/push redis-conn "salt" "pepper")]
-      (is (= (redis/pop redis-conn "salt") "pepper"))
+    (let [redis-conn (redis/new-connection redis-test-settings)
+          _ (redis/push "salt" "pepper" redis-conn)]
+      (is (= (redis/pop "salt" redis-conn) "pepper"))
       )))
 
 (deftest blocking-pop-value-from-queue
