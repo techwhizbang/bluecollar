@@ -24,12 +24,12 @@
     (start-pool worker-count)))
 
 (defn stop-workers []
-  "Stops the workers gracefully by letting them complete any tasks already started."
+  "Stops the workers gracefully by letting them complete any jobs already started."
   (do
     (stop-pool)))
 
 (defn dispatch-worker [job-plan-fn]
-  "Dispatches a worker to perform a job, namely the given function."
+  "Dispatches a job plan function to the worker pool."
   (.execute @thread-pool job-plan-fn))
 
 (defn dispatch-work [job-plan-map]

@@ -7,20 +7,25 @@
 (def ^:private keep-everyone-working (atom true))
 
 (defn start
-  "The superintendent gets messages from the given queue.
-   Like all management they delegate work. So the superintendent
-   translates the message into a job plan for their foreman
-   to dispatch."
-  [queue-name]
+  "Just like all management the superintendent likes to delegate work.
+   The superintendent informs the foreman how many workers are required.
+   The foreman starts the appropriate number of workers and waits for further instruction.
+   Throughout the day the superintendent receives messages from upper management.
+   The superintendent translates those messages into job plans for the foreman.
+   The foreman takes the jobs plan and dispatches the workers accordingly."
+  [queue-name worker-count]
   (do
     (reset! keep-everyone-working true)
+    (foreman/start-workers worker-count)
     (while @keep-everyone-working
       (let [value (redis/blocking-pop queue-name)]
-        (if-not (and (nil? value) (vector? value))
-          (let [plan-map (plan/from-json value)]
-            (foreman/dispatch-work plan-map))
-          )))))
+        (if (and (not (nil? value)) (not (coll? value)))
+          (foreman/dispatch-work (plan/from-json value)))
+        ))
+    ))
 
 (defn stop []
-  (reset! keep-everyone-working false))
+  (do
+    (reset! keep-everyone-working false)
+    (foreman/stop-workers)))
 
