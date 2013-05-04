@@ -12,20 +12,17 @@
    The foreman starts the appropriate number of workers and waits for further instruction.
    Throughout the day the superintendent receives messages from upper management.
    The superintendent translates those messages into job plans for the foreman.
-   The foreman takes the jobs plan and dispatches the workers accordingly."
+   The foreman takes the job plans and dispatches the workers accordingly."
   [queue-name worker-count]
-  (do
-    (reset! keep-everyone-working true)
-    (foreman/start-workers worker-count)
-    (while @keep-everyone-working
-      (let [value (redis/blocking-pop queue-name)]
-        (if (and (not (nil? value)) (not (coll? value)))
-          (foreman/dispatch-work (plan/from-json value)))
-        ))
-    ))
+  (reset! keep-everyone-working true)
+  (foreman/start-workers worker-count)
+  (while @keep-everyone-working
+    (let [value (redis/blocking-pop queue-name)]
+      (if (and (not (nil? value)) (not (coll? value)))
+        (foreman/dispatch-work (plan/from-json value)))
+      )))
 
 (defn stop []
-  (do
-    (reset! keep-everyone-working false)
-    (foreman/stop-workers)))
+  (reset! keep-everyone-working false)
+  (foreman/stop-workers))
 

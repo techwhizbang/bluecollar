@@ -1,9 +1,9 @@
 (ns bluecollar.foreman-test
   (:use clojure.test)
   (:require [bluecollar.foreman :as foreman]
-            [bluecollar.job-plans :as plan]
-            [bluecollar.fake-worker]
-            [bluecollar.labor-union-rep :as labor-rep]))
+    [bluecollar.job-plans :as plan]
+    [bluecollar.fake-worker]
+    [bluecollar.labor-union-rep :as labor-rep]))
 
 (def number-of-workers 5)
 
@@ -38,3 +38,4 @@
         (is (true? (deref bluecollar.fake-worker/perform-called)))
         )
       )))
+
