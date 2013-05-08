@@ -1,42 +1,62 @@
 (ns bluecollar.job-plans-test
-  (:use clojure.test)
+  (:use clojure.test
+    bluecollar.test-helper)
   (:require [bluecollar.job-plans :as plan]
-            [bluecollar.fake-worker]))
+    [bluecollar.redis-message-storage :as redis]
+    [bluecollar.union-rep :as union-rep]
+    [bluecollar.fake-worker]))
 
-(deftest plan-as-map-test
+(use-redis-test-setup)
+
+(use-fixtures :each (fn [f]
+  (reset! bluecollar.fake-worker/perform-called false)
+  (f)))
+
+(deftest plan-as-struct-test
   (testing "converts a ns and arguments into a job plan map"
-    (is (= (plan/as-map 'bluecollar.fake-worker [1 2])
-      {"ns" 'bluecollar.fake-worker, "args" [1 2]}))
+    (is (= (struct plan/job-plan :hard-worker [1 2])
+      {"worker" :hard-worker, "args" [1 2]}))
     ))
 
 (deftest plan-as-json-test
   (testing "converts a plan map to JSON"
-    (is (= (plan/as-json 'bluecollar.fake-worker [1 2])
-      "{\"ns\":\"bluecollar.fake-worker\",\"args\":[1,2]}"))))
+    (is (= (plan/as-json :hard-worker [1 2])
+      "{\"worker\":\"hard-worker\",\"args\":[1,2]}"))))
 
 (deftest plan-from-json-test
   (testing "converts a plan in JSON to a map"
-    (let [a-map-plan {"ns" 'bluecollar.fake-worker, "args" [1 2]}
-          a-json-plan (plan/as-json 'bluecollar.fake-worker [1 2])]
-      (is (= (plan/from-json a-json-plan) a-map-plan))
-      )))
-
-(deftest plan-as-list-test
-  (testing "converts a plan map to a list"
-    (let [plan-map (plan/as-map 'bluecollar.fake-worker [1 2])
-          plan-as-list (plan/as-list plan-map)]
-      (is (= plan-as-list '(bluecollar.fake-worker 1 2)))
+    (let [a-job-plan (struct plan/job-plan :hard-worker [1 2])
+          a-json-plan (plan/as-json :hard-worker [1 2])]
+      (is (= (plan/from-json a-json-plan) a-job-plan))
       )))
 
 (deftest plan-for-worker-test
   (testing "converts a plan map for a worker"
-    (let [plan-map {"ns" 'bluecollar.fake-worker, "args" [1 2]}]
-      (is (fn? (plan/for-worker plan-map)))
+    (let [job-plan (struct plan/job-plan :hard-worker [1 2])]
+      (is (fn? (plan/for-worker job-plan)))
       ))
 
   (testing "makes an executable function for the worker"
-    (let [plan-map {"ns" 'bluecollar.fake-worker, "args" [1 2]}
+    (let [hard-worker {:hard-worker {:fn bluecollar.fake-worker/perform
+                                     :queue "crunch-numbers"}}
+          _ (swap! bluecollar.union-rep/worker-registry conj hard-worker)
+          plan-map {"worker" :hard-worker, "args" [1 2]}
           _ ((plan/for-worker plan-map))]
       (is (true? (deref bluecollar.fake-worker/perform-called)))
       ))
   )
+
+(deftest enqueue-test
+  (testing "successfully enqueues a job plan for a registered worker"
+    (let [hard-worker {:hard-worker {:fn bluecollar.fake-worker/perform
+                                     :queue testing-queue-name}}
+          _ (swap! bluecollar.union-rep/worker-registry conj hard-worker)
+          _ (plan/enqueue :hard-worker [1 3])]
+      (is (= (redis/pop testing-queue-name) "{\"worker\":\"hard-worker\",\"args\":[1,3]}"))
+      ))
+  
+  (testing "throws a RuntimeException when an unregistered worker is encountered"
+    (let [_ (reset! bluecollar.union-rep/worker-registry {})]
+      (is (thrown-with-msg? RuntimeException #":hard-worker was not found in the worker registry." (plan/enqueue :hard-worker [1 3])))
+      )
+    ))

@@ -1,11 +1,18 @@
 (ns bluecollar.foreman-test
-  (:use clojure.test)
+  (:use clojure.test
+        bluecollar.test-helper)
   (:require [bluecollar.foreman :as foreman]
     [bluecollar.job-plans :as plan]
     [bluecollar.fake-worker]
-    [bluecollar.labor-union-rep :as labor-rep]))
+    [bluecollar.union-rep :as union-rep]))
 
 (def number-of-workers 5)
+
+(use-redis-test-setup)
+
+(use-fixtures :each (fn [f]
+  (reset! bluecollar.fake-worker/perform-called false)
+  (f)))
 
 (deftest foreman-start-stop-workers-test
   (testing "all of the workers can start and stop"
@@ -28,9 +35,11 @@
       ))
 
   (testing "can dispatch a worker based on a job plan"
-    (let [_ (labor-rep/union-card-check 'bluecollar.fake-worker)
-          job-map (plan/as-map 'bluecollar.fake-worker [1 2])
-          job-for-worker (plan/for-worker job-map)]
+    (let [hard-worker {:fake-worker {:fn bluecollar.fake-worker/perform
+                                     :queue testing-queue-name}}
+          _ (swap! bluecollar.union-rep/worker-registry conj hard-worker)
+          a-job-plan (struct plan/job-plan :fake-worker [1 2])
+          job-for-worker (plan/for-worker a-job-plan)]
       (do
         (foreman/start-workers number-of-workers)
         (foreman/dispatch-worker job-for-worker)

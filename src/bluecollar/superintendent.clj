@@ -10,7 +10,7 @@
   "Just like all management the superintendent likes to delegate work.
    The superintendent informs the foreman how many workers are required.
    The foreman starts the appropriate number of workers and waits for further instruction.
-   Throughout the day the superintendent receives messages from upper management.
+   Throughout the day the superintendent receives messages from \"upper management\".
    The superintendent translates those messages into job plans for the foreman.
    The foreman takes the job plans and dispatches the workers accordingly."
   [queue-name worker-count]

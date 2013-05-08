@@ -1,15 +1,19 @@
 (ns bluecollar.union-rep-test
   (:use clojure.test
-        bluecollar.test-helper)
+    bluecollar.test-helper)
   (:require [bluecollar.union-rep :as union-rep]
-            [bluecollar.fake-worker]))
+    [bluecollar.fake-worker]))
+
+(use-fixtures :each (fn [f]
+  (reset! union-rep/worker-registry {})
+  (f)))
 
 (deftest worker-registry-test
   (testing "adds a new worker to the registry"
     (let [hard-worker {:hard-worker {:fn bluecollar.fake-worker/perform
                                      :queue "crunch-numbers"}}
-          _ (swap! bluecollar.union-rep/worker-registry conj hard-worker)]
-      (is (= (deref bluecollar.union-rep/worker-registry) hard-worker))
+          _ (swap! union-rep/worker-registry conj hard-worker)]
+      (is (= (deref union-rep/worker-registry) hard-worker))
       )))
 
 (deftest union-card-check-test
