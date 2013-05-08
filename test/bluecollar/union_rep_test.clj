@@ -1,13 +1,13 @@
 (ns bluecollar.union-rep-test
   (:use clojure.test
         bluecollar.test-helper)
-  ; explicitly not requiring bluecollar.fake-worker to ensure the labor-rep is doing
-  ; it's job
-  (:require [bluecollar.union-rep :as union-rep]))
+  (:require [bluecollar.union-rep :as union-rep]
+            [bluecollar.fake-worker]))
 
 (deftest worker-registry-test
   (testing "adds a new worker to the registry"
-    (let [hard-worker {:hard-worker 'bluecollar.faker-worker/perform}
+    (let [hard-worker {:hard-worker {:fn bluecollar.fake-worker/perform
+                                     :queue "crunch-numbers"}}
           _ (swap! bluecollar.union-rep/worker-registry conj hard-worker)]
       (is (= (deref bluecollar.union-rep/worker-registry) hard-worker))
       )))
