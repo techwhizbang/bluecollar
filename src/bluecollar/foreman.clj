@@ -1,6 +1,6 @@
 (ns bluecollar.foreman
   (:import java.util.concurrent.Executors)
-  (:require [bluecollar.labor-union-rep :as labor-rep]
+  (:require [bluecollar.union-rep :as union-rep]
             [bluecollar.job-plans :as plan]))
 
 (def ^:private thread-pool (atom nil))
@@ -38,7 +38,7 @@
   (let [worker-ns (get job-plan-map "ns")
         job-plan (plan/for-worker job-plan-map)]
     (do
-      (labor-rep/union-card-check worker-ns)
+      (union-rep/union-card-check worker-ns)
       (dispatch-worker job-plan))))
 
 
