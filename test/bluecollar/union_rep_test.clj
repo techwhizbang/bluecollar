@@ -5,20 +5,19 @@
     [bluecollar.fake-worker]))
 
 (use-fixtures :each (fn [f]
-  (reset! union-rep/worker-registry {})
+  (reset! union-rep/registered-workers {})
   (f)))
 
-(deftest worker-registry-test
-  (testing "adds a new worker to the registry"
-    (let [hard-worker {:hard-worker {:fn bluecollar.fake-worker/perform
-                                     :queue "crunch-numbers"}}
-          _ (swap! union-rep/worker-registry conj hard-worker)]
-      (is (= (deref union-rep/worker-registry) hard-worker))
+(deftest registered-workers-test
+  (testing "registers a single new worker-definition"
+    (let [hard-worker (struct union-rep/worker-definition bluecollar.fake-worker/perform "crunch-numbers" false)
+          _ (union-rep/register-worker :hard-worker hard-worker)]
+      (is (= (deref union-rep/registered-workers) {:hard-worker hard-worker}))
+      ))
+  (testing "registers all of the worker-definitions"
+    (let [hard-worker-1 (struct union-rep/worker-definition bluecollar.fake-worker/perform "crunch-numbers" false)
+          hard-worker-2 (struct union-rep/worker-definition bluecollar.fake-worker/perform "crunch-numbers" false)
+          all-workers-defs {:one hard-worker-1 :two hard-worker-2}
+          _ (union-rep/register-workers all-workers-defs)]
+      (is (= (deref union-rep/registered-workers) all-workers-defs))
       )))
-
-(deftest union-card-check-test
-  (testing "if not alreay loaded include the given namespace"
-    (let [_ (union-rep/union-card-check 'bluecollar.fake-worker)]
-      (is (true? (contains? (loaded-libs) 'bluecollar.fake-worker)))
-      (is (true? (eval (list 'bluecollar.fake-worker/perform 1 2)))))
-    ))

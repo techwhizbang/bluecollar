@@ -6,7 +6,7 @@
 (defstruct job-plan "worker" "args")
 
 (defn for-worker [job-plan]
-  (let [worker-registry (deref union-rep/worker-registry)
+  (let [worker-registry (deref union-rep/registered-workers)
         worker-name (get job-plan "worker")
         registered-worker (get worker-registry worker-name)
         worker-fn (get registered-worker :fn)
@@ -22,7 +22,7 @@
     ))
 
 (defn enqueue [worker-name args]
-  (let [registry (deref union-rep/worker-registry)
+  (let [registry (deref union-rep/registered-workers)
         registered-worker (get registry worker-name)]
     (if-not (nil? registered-worker)
       (redis/push (get registered-worker :queue) (as-json (name worker-name) args))

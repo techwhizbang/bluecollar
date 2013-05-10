@@ -39,7 +39,7 @@
   (testing "makes an executable function for the worker"
     (let [hard-worker {:hard-worker {:fn bluecollar.fake-worker/perform
                                      :queue "crunch-numbers"}}
-          _ (swap! bluecollar.union-rep/worker-registry conj hard-worker)
+          _ (swap! bluecollar.union-rep/registered-workers conj hard-worker)
           plan-map {"worker" :hard-worker, "args" [1 2]}
           _ ((plan/for-worker plan-map))]
       (is (true? (deref bluecollar.fake-worker/perform-called)))
@@ -50,13 +50,13 @@
   (testing "successfully enqueues a job plan for a registered worker"
     (let [hard-worker {:hard-worker {:fn bluecollar.fake-worker/perform
                                      :queue testing-queue-name}}
-          _ (swap! bluecollar.union-rep/worker-registry conj hard-worker)
+          _ (swap! bluecollar.union-rep/registered-workers conj hard-worker)
           _ (plan/enqueue :hard-worker [1 3])]
       (is (= (redis/pop testing-queue-name) "{\"worker\":\"hard-worker\",\"args\":[1,3]}"))
       ))
   
   (testing "throws a RuntimeException when an unregistered worker is encountered"
-    (let [_ (reset! bluecollar.union-rep/worker-registry {})]
+    (let [_ (reset! bluecollar.union-rep/registered-workers {})]
       (is (thrown-with-msg? RuntimeException #":hard-worker was not found in the worker registry." (plan/enqueue :hard-worker [1 3])))
       )
     ))
