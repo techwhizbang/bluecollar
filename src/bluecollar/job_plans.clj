@@ -28,10 +28,17 @@
 (defn on-success [job-plan]
   (redis/processing-pop (as-json job-plan)))
 
+; TODO need to test the Exception case of the retry; 
+; TODO also need to attach a UUID to the job and stick it into Redis to count the number of
+; of retries. (str (java.util.UUID/randomUUID))
+(defn on-failure [job-plan]  
+  (let [retry? (get job-plan :retry)]
+    (if retry?
+      (enqueue job-plan))))
+
 (defn for-worker [job-plan]
   (let [worker-registry (deref union-rep/registered-workers)
         worker-name (get job-plan :worker)
-        retry? (get job-plan :retry)
         registered-worker (get worker-registry worker-name)
         worker-fn (get registered-worker :fn)
         args (get job-plan :args)]
@@ -39,11 +46,8 @@
       (try
         (apply worker-fn args)
         (on-success job-plan)
-        ; TODO need to test the Exception case of the retry; 
-        ; TODO also need to attach a UUID to the job and stick it into Redis to count the number of
-        ; of retries. (str (java.util.UUID/randomUUID))
       (catch Exception e
         (prn "caught exception: " (.getMessage e))
-        (if retry?
-          (enqueue job-plan)))))
+        (on-failure job-plan)
+        )))
     ))
