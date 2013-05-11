@@ -64,3 +64,20 @@
       (is (thrown-with-msg? RuntimeException #":hard-worker was not found in the worker registry." (plan/enqueue :hard-worker [1 3])))
       )
     ))
+
+(deftest on-success-test
+  (testing "successfully removes a job plan from the processing queue"
+    (let [workers {:hard-worker (struct union-rep/worker-definition 
+                                        bluecollar.fake-worker/perform
+                                        "crunch-numbers"
+                                        false)}
+          _ (union-rep/register-workers workers)
+          job-plan (struct plan/job-plan :hard-worker [1 3])
+          _ (plan/enqueue job-plan)
+          current-vals (redis/lrange (deref redis/processing-queue) 0 0)
+          _ (plan/on-success job-plan)
+          remaining-vals (redis/lrange (deref redis/processing-queue) 0 0)]
+        (is (not (empty? current-vals)))
+        (is (empty? remaining-vals))
+      )
+    ))
