@@ -1,6 +1,6 @@
 (ns bluecollar.union-rep)
 
-(defstruct worker-definition "fn" "queue" "retry")
+(defstruct worker-definition :fn :queue :retry)
 
 (def registered-workers
   "worker-definitions are stored here"

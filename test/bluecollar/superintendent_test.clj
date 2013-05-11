@@ -16,12 +16,13 @@
 
 (deftest superintendent-end-to-end-test
   (testing "that the message is passed to the foreman and the foreman dispatches work"
-    (let [hard-worker {:fake-worker {:fn bluecollar.fake-worker/perform
-                                     :queue testing-queue-name}}
-          _ (swap! union-rep/registered-workers conj hard-worker)
+    (let [workers {:hard-worker (struct union-rep/worker-definition 
+                                        bluecollar.fake-worker/perform
+                                        testing-queue-name
+                                        false)}
+          _ (union-rep/register-workers workers)
           _ (future (boss/start testing-queue-name 5))
-          plan-as-json (plan/as-json :fake-worker [3 2])
-          _ (redis/push testing-queue-name plan-as-json)
+          _ (plan/enqueue :hard-worker [3 2])
           _ (Thread/sleep 2000)
           _ (boss/stop)]
       (is (true? (deref bluecollar.fake-worker/perform-called))))

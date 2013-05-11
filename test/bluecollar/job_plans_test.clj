@@ -15,7 +15,7 @@
 (deftest plan-as-struct-test
   (testing "converts a ns and arguments into a job plan map"
     (is (= (struct plan/job-plan :hard-worker [1 2])
-      {"worker" :hard-worker, "args" [1 2]}))
+      {:worker :hard-worker, :args [1 2]}))
     ))
 
 (deftest plan-as-json-test
@@ -37,22 +37,26 @@
       ))
 
   (testing "makes an executable function for the worker"
-    (let [hard-worker {:hard-worker {:fn bluecollar.fake-worker/perform
-                                     :queue "crunch-numbers"}}
-          _ (swap! bluecollar.union-rep/registered-workers conj hard-worker)
-          plan-map {"worker" :hard-worker, "args" [1 2]}
-          _ ((plan/for-worker plan-map))]
+    (let [workers {:hard-worker (struct union-rep/worker-definition 
+                                        bluecollar.fake-worker/perform
+                                        "crunch-numbers"
+                                        false)}
+          _ (union-rep/register-workers workers)
+          a-job-plan (struct plan/job-plan :hard-worker [1 2])
+          _ ((plan/for-worker a-job-plan))]
       (is (true? (deref bluecollar.fake-worker/perform-called)))
       ))
   )
 
 (deftest enqueue-test
   (testing "successfully enqueues a job plan for a registered worker"
-    (let [hard-worker {:hard-worker {:fn bluecollar.fake-worker/perform
-                                     :queue testing-queue-name}}
-          _ (swap! bluecollar.union-rep/registered-workers conj hard-worker)
+    (let [workers {:hard-worker (struct union-rep/worker-definition 
+                                        bluecollar.fake-worker/perform
+                                        "crunch-numbers"
+                                        false)}
+          _ (union-rep/register-workers workers)
           _ (plan/enqueue :hard-worker [1 3])]
-      (is (= (redis/pop testing-queue-name) "{\"worker\":\"hard-worker\",\"args\":[1,3]}"))
+      (is (= (redis/pop "crunch-numbers") "{\"worker\":\"hard-worker\",\"args\":[1,3]}"))
       ))
   
   (testing "throws a RuntimeException when an unregistered worker is encountered"

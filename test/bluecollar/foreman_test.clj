@@ -35,9 +35,10 @@
       ))
 
   (testing "can dispatch a worker based on a job plan"
-    (let [hard-worker {:fake-worker {:fn bluecollar.fake-worker/perform
-                                     :queue testing-queue-name}}
-          _ (swap! bluecollar.union-rep/registered-workers conj hard-worker)
+    (let [workers {:fake-worker (struct union-rep/worker-definition
+                                        bluecollar.fake-worker/perform
+                                        testing-queue-name false)}
+          _ (union-rep/register-workers workers)
           a-job-plan (struct plan/job-plan :fake-worker [1 2])
           job-for-worker (plan/for-worker a-job-plan)]
       (do
