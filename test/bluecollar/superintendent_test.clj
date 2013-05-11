@@ -24,6 +24,9 @@
           _ (future (boss/start testing-queue-name 5))
           _ (plan/enqueue :hard-worker [3 2])
           _ (Thread/sleep 2000)
-          _ (boss/stop)]
-      (is (true? (deref bluecollar.fake-worker/perform-called))))
+          _ (boss/stop)
+          in-processing-vals (redis/lrange (deref redis/processing-queue) 0 0)]
+      (is (true? (deref bluecollar.fake-worker/perform-called)))
+      (is (empty? in-processing-vals))
+      )
     ))
