@@ -39,7 +39,7 @@
                                         bluecollar.fake-worker/perform
                                         testing-queue-name false)}
           _ (union-rep/register-workers workers)
-          a-job-plan (struct plan/job-plan :fake-worker [1 2])
+          a-job-plan (plan/new-job-plan :fake-worker [1 2])
           job-for-worker (plan/for-worker a-job-plan)]
       (do
         (foreman/start-workers number-of-workers)

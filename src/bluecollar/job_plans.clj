@@ -3,23 +3,30 @@
     [bluecollar.union-rep :as union-rep]
     [bluecollar.redis-message-storage :as redis]))
 
-(defstruct job-plan :worker :args)
+(defstruct job-plan :worker :args :uuid)
+
+(defn new-job-plan [worker args]
+  (struct job-plan worker args (str (java.util.UUID/randomUUID))))
 
 (defn as-json 
-  ([worker-name arg-vec] (json/generate-string (struct job-plan worker-name arg-vec)))
   ([job-plan] (json/generate-string job-plan)))
 
 (defn from-json [plan-as-json]
   (let [parsed-map (json/parse-string plan-as-json)]
-    (struct job-plan (keyword (get parsed-map "worker")) (get parsed-map "args"))
+    (struct job-plan (keyword (get parsed-map "worker")) 
+                     (get parsed-map "args") 
+                     (get parsed-map "uuid"))
     ))
 
 (defn enqueue
   ([worker-name args] 
     (let [registry (deref union-rep/registered-workers)
-        registered-worker (get registry worker-name)]
+          registered-worker (get registry worker-name)]
     (if-not (nil? registered-worker)
-      (redis/push (get registered-worker :queue) (as-json (name worker-name) args))
+      (let [queue (get registered-worker :queue)
+            uuid (str (java.util.UUID/randomUUID))
+            plan (struct job-plan (name worker-name) args uuid)]
+        (redis/push queue (as-json plan)))
       (throw (RuntimeException. (str worker-name " was not found in the worker registry.")))
       )))
   ([job-plan]
