@@ -20,8 +20,7 @@
 
 (defn enqueue
   ([worker-name args] 
-    (let [registry (deref union-rep/registered-workers)
-          registered-worker (get registry worker-name)]
+    (let [registered-worker (union-rep/find-worker worker-name)]
     (if-not (nil? registered-worker)
       (let [queue (get registered-worker :queue)
             uuid (str (java.util.UUID/randomUUID))
@@ -35,18 +34,26 @@
 (defn on-success [job-plan]
   (redis/processing-pop (as-json job-plan)))
 
-; TODO need to test the Exception case of the retry; 
-; TODO also need to attach a UUID to the job and stick it into Redis to count the number of
-; of retries. (str (java.util.UUID/randomUUID))
+;TODO
+;on failure
+;   if max failures not met
+;   increment the times the job has failed based on the UUID in Redis
+;   determine the scheduled time by now + delay, add to job plan
+;   push back into the queue
+
+; on receipt of a retried job 
+;   if the scheduled time is <= NOW
+;     dispatch worker
+;   if the scheduled time is > NOW
+;     schedule worker
 (defn on-failure [job-plan]  
   (let [retry? (get job-plan :retry)]
     (if retry?
       (enqueue job-plan))))
 
 (defn for-worker [job-plan]
-  (let [worker-registry (deref union-rep/registered-workers)
-        worker-name (get job-plan :worker)
-        registered-worker (get worker-registry worker-name)
+  (let [worker-name (get job-plan :worker)
+        registered-worker (union-rep/find-worker worker-name)
         worker-fn (get registered-worker :fn)
         args (get job-plan :args)]
     (fn [] 

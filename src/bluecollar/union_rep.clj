@@ -6,6 +6,9 @@
   "worker-definitions are stored here"
   (atom {}))
 
+(defn find-worker [worker-name]
+  (get @registered-workers worker-name))
+
 (defn register-workers
   "Register all of your worker-definitions in one shot.
    The keys chosen will be the same keys used to enqueue

@@ -21,3 +21,13 @@
           _ (union-rep/register-workers all-workers-defs)]
       (is (= (deref union-rep/registered-workers) all-workers-defs))
       )))
+
+(deftest find-worker-test
+  (testing "returns a worker definition that has been registered"
+    (let [hard-worker (struct union-rep/worker-definition bluecollar.fake-worker/perform "crunch-numbers" false)
+          _ (union-rep/register-worker :hard-worker hard-worker)]
+      (is (= (union-rep/find-worker :hard-worker) hard-worker))
+      ))
+  (testing "returns nil if a worker definition is not found"
+    (is (nil? (union-rep/find-worker :missing-worker)))
+      ))
