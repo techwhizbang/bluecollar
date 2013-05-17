@@ -1,10 +1,11 @@
 (ns bluecollar.job-plans-test
   (:use clojure.test
     bluecollar.test-helper)
-  (:require [bluecollar.job-plans :as plan]
-    [bluecollar.redis-message-storage :as redis]
-    [bluecollar.union-rep :as union-rep]
-    [bluecollar.fake-worker]))
+  (:require [clj-time.core :as time]
+            [bluecollar.job-plans :as plan]
+            [bluecollar.redis-message-storage :as redis]
+            [bluecollar.union-rep :as union-rep]
+            [bluecollar.fake-worker]))
 
 (use-fixtures :each (fn [f]
   (redis/startup redis-test-settings)
@@ -17,14 +18,25 @@
     (let [job-plan (struct plan/job-plan :a-worker ["a" "b"])]
       (is (= job-plan {:worker :a-worker, 
                        :args ["a" "b"], 
-                       :uuid nil}))))
+                       :uuid nil
+                       :scheduled-runtime nil}))))
 
   (testing "takes a worker, vector of args, and a UUID"
     (let [uuid (str (java.util.UUID/randomUUID))
           job-plan (struct plan/job-plan :b-worker ["c" "d"] uuid)]
         (is (= job-plan {:worker :b-worker, 
                          :args ["c" "d"], 
-                         :uuid uuid}))))
+                         :uuid uuid
+                         :scheduled-runtime nil}))))
+
+  (testing "takes a worker, vector of args, UUID, and scheduled-runtime"
+    (let [uuid (str (java.util.UUID/randomUUID))
+          now (time/now)
+          job-plan (struct plan/job-plan :b-worker ["c" "d"] uuid now)]
+        (is (= job-plan {:worker :b-worker, 
+                         :args ["c" "d"], 
+                         :uuid uuid
+                         :scheduled-runtime now}))))
   )
 
 (deftest new-job-plan-test
@@ -36,11 +48,18 @@
         )))
 
 (deftest plan-as-json-test
-  (testing "converts a plan to JSON"
-    (let [plan-struct (struct plan/job-plan :hard-worker [1 2])]
-      (is (= (plan/as-json plan-struct)
-        "{\"worker\":\"hard-worker\",\"args\":[1,2],\"uuid\":null}")))
-    ))
+  (testing "converts a plan to JSON without a scheduled-runtime"
+    (let [job-plan (plan/new-job-plan :hard-worker [1 2] nil nil)]
+      (is (= (plan/as-json job-plan)
+        "{\"worker\":\"hard-worker\",\"args\":[1,2],\"uuid\":null,\"scheduled-runtime\":null}")))
+    )
+
+  (testing "converts a plan to JSON with a scheduled-runtime"
+    (let [now (time/now)
+          job-plan (plan/new-job-plan :hard-worker [1 2] nil now)]
+      (is (= (plan/as-json job-plan)
+        (str "{\"worker\":\"hard-worker\",\"args\":[1,2],\"uuid\":null,\"scheduled-runtime\":\"" now "\"}")))))
+  )
 
 (deftest plan-from-json-test
   (testing "converts a plan in JSON to a map"

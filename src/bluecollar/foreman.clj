@@ -1,7 +1,7 @@
 (ns bluecollar.foreman
   (:import java.util.concurrent.Executors)
   (:require [bluecollar.union-rep :as union-rep]
-    [bluecollar.job-plans :as plan]))
+            [bluecollar.job-plans :as plan]))
 
 (def ^:private thread-pool (atom nil))
 

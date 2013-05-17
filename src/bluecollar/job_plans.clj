@@ -1,39 +1,47 @@
 (ns bluecollar.job-plans
   (:require [cheshire.core :as json]
-    [bluecollar.union-rep :as union-rep]
-    [bluecollar.redis-message-storage :as redis]))
+            [clj-time.core :as time]
+            [clj-time.coerce :as time-parser]
+            [bluecollar.union-rep :as union-rep]
+            [bluecollar.redis-message-storage :as redis]))
 
-(defstruct job-plan :worker :args :uuid)
+(defstruct job-plan :worker :args :uuid :scheduled-runtime)
 
-(defn new-job-plan [worker args]
-  (struct job-plan worker args (str (java.util.UUID/randomUUID))))
+(defn new-job-plan 
+  ([worker args] (new-job-plan worker args nil))
+  ([worker args scheduled-runtime] (new-job-plan worker args (str (java.util.UUID/randomUUID)) scheduled-runtime))
+  ([worker args uuid scheduled-runtime] (struct job-plan (keyword worker) args uuid scheduled-runtime)))
 
-(defn as-json 
-  ([job-plan] (json/generate-string job-plan)))
+(defn as-json [job-plan]
+  (if-let [scheduled-runtime (get job-plan :scheduled-runtime)]
+    (json/generate-string (assoc job-plan :scheduled-runtime (str scheduled-runtime)))
+    (json/generate-string job-plan)))
 
 (defn from-json [plan-as-json]
-  (let [parsed-map (json/parse-string plan-as-json)]
-    (struct job-plan (keyword (get parsed-map "worker")) 
-                     (get parsed-map "args") 
-                     (get parsed-map "uuid"))
+  (let [parsed-map (json/parse-string plan-as-json)
+        unparsed-scheduled-runtime (get parsed-map "scheduled-runtime")
+        scheduled-runtime (if-not (nil? unparsed-scheduled-runtime)
+                            (time-parser/from-string unparsed-scheduled-runtime))]
+    (new-job-plan (get parsed-map "worker") (get parsed-map "args") (get parsed-map "uuid") 
+                  scheduled-runtime)
     ))
 
 (defn enqueue
   ([worker-name args] 
-    (let [registered-worker (union-rep/find-worker worker-name)]
-    (if-not (nil? registered-worker)
-      (let [queue (get registered-worker :queue)
-            uuid (str (java.util.UUID/randomUUID))
-            plan (struct job-plan (name worker-name) args uuid)]
-        (redis/push queue (as-json plan)))
-      (throw (RuntimeException. (str worker-name " was not found in the worker registry.")))
-      )))
+    (enqueue (new-job-plan worker-name args)))
+  ([worker-name args scheduled-runtime]
+    (enqueue (new-job-plan worker-name args scheduled-runtime)))
   ([job-plan]
-    (enqueue (get job-plan :worker) (get job-plan :args))))
+    (let [worker-name (get job-plan :worker)
+          registered-worker (union-rep/find-worker worker-name)]
+    (if-not (nil? registered-worker)
+      (let [queue (get registered-worker :queue)]
+        (redis/push queue (as-json job-plan)))
+      (throw (RuntimeException. (str worker-name " was not found in the worker registry.")))
+      ))))
 
 (defn on-success [job-plan]
   (redis/processing-pop (as-json job-plan)))
-
 
 (defn- retry-on-failure? [job-plan]
   (let [retryable-job? (get job-plan :retry)
@@ -42,24 +50,20 @@
 
 (defn- retry [job-plan]
   (let [uuid (get job-plan :uuid)
-        fail-cnt (redis/failure-count uuid)
-        retry-delay-in-secs (Math/pow 5 fail-cnt)])
-  (redis/failure-inc (get job-plan :uuid))
-  (enqueue job-plan))
-;TODO
-;on failure
-;   if max failures not met
-;   increment the times the job has failed based on the UUID in Redis
-;   determine the scheduled time by now + delay, add to job plan
-;   push back into the queue
+        _ (redis/failure-inc uuid)
+        failures (redis/failure-count uuid)
+        scheduled-runtime (time/plus (time/now) (time/secs (Math/pow 5 failures)))
+        scheduled-job-plan (assoc job-plan :scheduled-runtime scheduled-runtime)]
+    (enqueue scheduled-job-plan)))
 
+;TODO
 ; on receipt of a retried job 
 ;   if the scheduled time is <= NOW
 ;     dispatch worker
 ;   if the scheduled time is > NOW
-;     schedule worker
-(defn on-failure [job-plan]  
-  (if (retry-on-failure?)
+;     schedule worker for (scheduled time - NOW) in seconds
+(defn on-failure [job-plan]
+  (if (retry-on-failure? job-plan)
     (retry job-plan)))
 
 (defn for-worker [job-plan]
