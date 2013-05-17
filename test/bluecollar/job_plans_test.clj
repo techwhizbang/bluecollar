@@ -118,3 +118,17 @@
         (is (empty? remaining-vals))
       )
     ))
+
+(deftest retry-delay-test
+  (testing "calculates 5 seconds of delay for 1 failure")
+  (testing "calculates 25 seconds of delay for 2 failures")
+  (testing "calculate 125 seconds of delays for 3 failures"))
+
+(deftest below-failure-threshold-test)
+
+(deftest retry-on-failure-test)
+
+(deftest on-failure-test
+  (testing "re-enqueues the job plan when the worker allows retries")
+
+  (testing "does not re-enqueue the job plan when the worker does not allow retries"))

@@ -7,6 +7,15 @@
 
 (defstruct job-plan :worker :args :uuid :scheduled-runtime)
 
+(def maximum-failures
+  "The maximum number of failures retry will exhaust. Re-define this threshold if you see fit."
+  (atom 25))
+
+(def delay-base
+  "Serves as the base of the exponential calculation for delay calculation where the failure
+   count is the exponent."
+  (atom 5))
+
 (defn new-job-plan 
   ([worker args] (new-job-plan worker args nil))
   ([worker args scheduled-runtime] (new-job-plan worker args (str (java.util.UUID/randomUUID)) scheduled-runtime))
@@ -43,16 +52,23 @@
 (defn on-success [job-plan]
   (redis/processing-pop (as-json job-plan)))
 
-(defn- retry-on-failure? [job-plan]
-  (let [retryable-job? (get job-plan :retry)
+(defn below-failure-threshold? [uuid]
+  (<= (redis/failure-count uuid) @maximum-failures))
+
+(defn retry-on-failure? [job-plan]
+  (let [worker-name (get job-plan :worker)
+        registered-worker (union-rep/find-worker worker-name)
+        retryable-worker? (get registered-worker :retry)
         uuid (get job-plan :uuid)]
-   (and retryable-job? (<= (redis/failure-count uuid) 25))))
+   (and retryable-worker? (below-failure-threshold? uuid))))
+
+(defn retry-delay [failures] (time/secs (Math/pow @delay-base failures)))
 
 (defn- retry [job-plan]
   (let [uuid (get job-plan :uuid)
         _ (redis/failure-inc uuid)
         failures (redis/failure-count uuid)
-        scheduled-runtime (time/plus (time/now) (time/secs (Math/pow 5 failures)))
+        scheduled-runtime (time/plus (time/now) (retry-delay failures))
         scheduled-job-plan (assoc job-plan :scheduled-runtime scheduled-runtime)]
     (enqueue scheduled-job-plan)))
 
