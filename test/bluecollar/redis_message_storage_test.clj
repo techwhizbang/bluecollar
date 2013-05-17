@@ -5,6 +5,31 @@
 
 (use-redis-test-setup)
 
+(deftest failure-count-total-test
+  (testing "returns the sum of all failures"
+    (dorun 4 (repeatedly #(redis/failure-inc "foo")))
+    (dorun 14 (repeatedly #(redis/failure-inc "bar")))
+    (is (= 20 (redis/failure-count-total)))))
+
+(deftest failure-count-test
+  (testing "returns zero when there are no failures"
+    (is (= 0 (redis/failure-count "no-failures"))))
+
+  (testing "returns the correct count of failures"
+    (redis/failure-inc "burger")
+    (is (= 1 (redis/failure-count "burger")))))
+
+(deftest increment-failures-test
+  (testing "increments an entry that does not exist yet by one"
+    (redis/failure-inc "sausages")
+    (is (= 1 (redis/failure-count "sausages"))))
+
+  (testing "increments an entry that already exists by one"
+    (redis/failure-inc "cheese")
+    (redis/failure-inc "cheese")
+    (is (= 2 (redis/failure-count "cheese")))
+    ))
+
 (deftest push-value-onto-queue
   (testing "pushes a String value onto a named queued"
     (is (= (redis/push "bacon" "eggs") 1)))
