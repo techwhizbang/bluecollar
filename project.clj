@@ -5,5 +5,6 @@
             :url "http://en.wikipedia.org/wiki/MIT_License"}
   :dependencies [[org.clojure/clojure "1.4.0"]
                  [clj-yaml "0.4.0"]
+                 [clj-time "0.5.0"]
                  [com.taoensso/carmine "1.6.0"]
                  [cheshire "5.1.1"]])
