@@ -34,6 +34,18 @@
 (defn on-success [job-plan]
   (redis/processing-pop (as-json job-plan)))
 
+
+(defn- retry-on-failure? [job-plan]
+  (let [retryable-job? (get job-plan :retry)
+        uuid (get job-plan :uuid)]
+   (and retryable-job? (<= (redis/failure-count uuid) 25))))
+
+(defn- retry [job-plan]
+  (let [uuid (get job-plan :uuid)
+        fail-cnt (redis/failure-count uuid)
+        retry-delay-in-secs (Math/pow 5 fail-cnt)])
+  (redis/failure-inc (get job-plan :uuid))
+  (enqueue job-plan))
 ;TODO
 ;on failure
 ;   if max failures not met
@@ -47,9 +59,8 @@
 ;   if the scheduled time is > NOW
 ;     schedule worker
 (defn on-failure [job-plan]  
-  (let [retry? (get job-plan :retry)]
-    (if retry?
-      (enqueue job-plan))))
+  (if (retry-on-failure?)
+    (retry job-plan)))
 
 (defn for-worker [job-plan]
   (let [worker-name (get job-plan :worker)
