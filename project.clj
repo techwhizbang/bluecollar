@@ -7,4 +7,5 @@
                  [clj-yaml "0.4.0"]
                  [clj-time "0.5.0"]
                  [com.taoensso/carmine "1.6.0"]
-                 [cheshire "5.1.1"]])
+                 [cheshire "5.1.1"]]
+  :profiles {:dev {:dependencies [[org.clojars.runa/conjure "2.1.3"]]}})

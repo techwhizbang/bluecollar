@@ -62,7 +62,7 @@
         uuid (get job-plan :uuid)]
    (and retryable-worker? (below-failure-threshold? uuid))))
 
-(defn retry-delay [failures] (time/secs (Math/pow @delay-base failures)))
+(defn retry-delay [failures] (Math/pow @delay-base failures))
 
 (defn- retry [job-plan]
   (let [uuid (get job-plan :uuid)

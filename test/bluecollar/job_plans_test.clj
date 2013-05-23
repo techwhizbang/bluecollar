@@ -1,6 +1,7 @@
 (ns bluecollar.job-plans-test
   (:use clojure.test
-    bluecollar.test-helper)
+    bluecollar.test-helper
+    conjure.core)
   (:require [clj-time.core :as time]
             [bluecollar.job-plans :as plan]
             [bluecollar.redis-message-storage :as redis]
@@ -120,15 +121,54 @@
     ))
 
 (deftest retry-delay-test
-  (testing "calculates 5 seconds of delay for 1 failure")
-  (testing "calculates 25 seconds of delay for 2 failures")
-  (testing "calculate 125 seconds of delays for 3 failures"))
+  (testing "calculates 5 seconds of delay for 1 failure"
+    (is (= 5.0 (plan/retry-delay 1))))
+  (testing "calculates 25 seconds of delay for 2 failures"
+    (is (= 25.0 (plan/retry-delay 2))))
+  (testing "calculate 125 seconds of delays for 3 failures"
+    (is (= 125.0 (plan/retry-delay 3)))))
 
-(deftest below-failure-threshold-test)
+(deftest below-failure-threshold-test
+  (testing "returns true when it is below the threshold"
+    (stubbing [redis/failure-count (- (deref plan/maximum-failures) 1)]
+      (is (= true (plan/below-failure-threshold? "foo")))))
 
-(deftest retry-on-failure-test)
+  (testing "returns false when it is above the threshold"
+    (stubbing [redis/failure-count (+ (deref plan/maximum-failures) 1)]
+      (is (= false (plan/below-failure-threshold? "foo"))))))
+
+(deftest retry-on-failure-test
+  (testing "returns false if the registered worker is not retryable"
+    (let [workers {:hard-worker (struct union-rep/worker-definition
+                                        bluecollar.fake-worker/perform
+                                        "crunch-numbers"
+                                        false)}
+          _ (union-rep/register-workers workers)
+          job-plan (plan/new-job-plan :hard-worker [1 2])]
+      (stubbing [redis/failure-count (- (deref plan/maximum-failures) 1)]
+        (is (= false (plan/retry-on-failure? job-plan))))))
+
+  (testing "returns false if the number of failures is above the threshold"
+    (let [workers {:hard-worker (struct union-rep/worker-definition
+                                        bluecollar.fake-worker/perform
+                                        "crunch-numbers"
+                                        true)}
+          _ (union-rep/register-workers workers)
+          job-plan (plan/new-job-plan :hard-worker [1 2])]
+      (stubbing [redis/failure-count (+ (deref plan/maximum-failures) 1)]
+        (is (= false (plan/retry-on-failure? job-plan))))))
+
+  (testing "returns true if the registered worker is retryable and failures are below the threshold"
+    (let [workers {:hard-worker (struct union-rep/worker-definition
+                                        bluecollar.fake-worker/perform
+                                        "crunch-numbers"
+                                        true)}
+          _ (union-rep/register-workers workers)
+          job-plan (plan/new-job-plan :hard-worker [1 2])]
+      (stubbing [redis/failure-count (- (deref plan/maximum-failures) 1)]
+        (is (= true (plan/retry-on-failure? job-plan))))))
+  )
 
 (deftest on-failure-test
   (testing "re-enqueues the job plan when the worker allows retries")
-
   (testing "does not re-enqueue the job plan when the worker does not allow retries"))
