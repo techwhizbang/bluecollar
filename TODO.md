@@ -4,7 +4,7 @@
 * A lifecycle hook for developers that want to extend "bluecollar"
     * Hook before a job runs
     * Hook after a job runs
-* Recoverable against errors that occur in jobs.
+* Safe guard against errors that occur in jobs that could crash the process.
 * Reporting mechanism for when jobs fail.
     * daily email journal
 * Lots of great logging
@@ -15,8 +15,12 @@
     * fn
     * queue
     * retry
+* Indicate server hostname the job plan is being executed.
 * Scheduled jobs
     * Ability to "enqueue" a job to run in the future.
+* Re-coverability
+    * If the process terminates ungracefully and leaves jobs in the
+      "processing" queue; recover those jobs and retry them.
 * Batch jobs
     * Group otherwise individual jobs into a grouping that can
       be identified in the UI and their overall progress can be

@@ -9,14 +9,19 @@
 
 (def maximum-failures
   "The maximum number of failures retry will exhaust. Re-define this threshold if you see fit."
-  (atom 25))
+  (atom 24))
 
 (def delay-base
   "Serves as the base of the exponential calculation for delay calculation where the failure
    count is the exponent."
   (atom 5))
 
-(defn new-job-plan 
+(defn new-job-plan
+  "Instantiates a new 'job plan' for a worker to perform.
+   Example: (new-job-plan :hard-worker [1 2 3])
+   The worker should be specified as a keyword, just as it was registered during setup.
+   The args should be specified as a Vector and must match the order and arity of the worker's function argument(s).
+   The optional scheduled runtime must be specified in ISO8601 date/time string format (ie. 2013-05-25T23:40:15.011Z)." 
   ([worker args] (new-job-plan worker args nil))
   ([worker args scheduled-runtime] (new-job-plan worker args (str (java.util.UUID/randomUUID)) scheduled-runtime))
   ([worker args uuid scheduled-runtime] (struct job-plan (keyword worker) args uuid scheduled-runtime)))
@@ -27,12 +32,9 @@
     (json/generate-string job-plan)))
 
 (defn from-json [plan-as-json]
-  (let [parsed-map (json/parse-string plan-as-json)
-        unparsed-scheduled-runtime (get parsed-map "scheduled-runtime")
-        scheduled-runtime (if-not (nil? unparsed-scheduled-runtime)
-                            (time-parser/from-string unparsed-scheduled-runtime))]
+  (let [parsed-map (json/parse-string plan-as-json)]
     (new-job-plan (get parsed-map "worker") (get parsed-map "args") (get parsed-map "uuid") 
-                  scheduled-runtime)
+                  (get parsed-map "scheduled-runtime"))
     ))
 
 (defn enqueue
@@ -53,7 +55,7 @@
   (redis/processing-pop (as-json job-plan)))
 
 (defn below-failure-threshold? [uuid]
-  (<= (redis/failure-count uuid) @maximum-failures))
+  (< (redis/failure-count uuid) @maximum-failures))
 
 (defn retry-on-failure? [job-plan]
   (let [worker-name (get job-plan :worker)
@@ -68,7 +70,7 @@
   (let [uuid (get job-plan :uuid)
         _ (redis/failure-inc uuid)
         failures (redis/failure-count uuid)
-        scheduled-runtime (time/plus (time/now) (retry-delay failures))
+        scheduled-runtime (str (time/plus (time/now) (time/secs (retry-delay failures))))
         scheduled-job-plan (assoc job-plan :scheduled-runtime scheduled-runtime)]
     (enqueue scheduled-job-plan)))
 

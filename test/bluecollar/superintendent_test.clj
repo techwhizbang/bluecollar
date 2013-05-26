@@ -15,7 +15,7 @@
   (f)))
 
 (deftest superintendent-end-to-end-test
-  (testing "that the message is passed to the foreman and the foreman dispatches work"
+  (testing "that the job plan is passed to the foreman and the foreman dispatches work"
     (let [workers {:hard-worker (struct union-rep/worker-definition 
                                         bluecollar.fake-worker/perform
                                         testing-queue-name
@@ -29,4 +29,18 @@
       (is (true? (deref bluecollar.fake-worker/perform-called)))
       (is (empty? in-processing-vals))
       )
-    ))
+    )
+
+  (testing "a failing worker is retried the maximum number of times without crashing the process"
+    (let [_ (reset! plan/delay-base 1)
+          workers {:failing-worker (struct union-rep/worker-definition 
+                                           bluecollar.fake-worker/explode
+                                           testing-queue-name
+                                           true)}
+          _ (union-rep/register-workers workers)
+          _ (future (boss/start testing-queue-name 5))
+          _ (plan/enqueue :failing-worker [])
+          _ (Thread/sleep 2000)
+          _ (boss/stop)]
+      (is (= 25 (deref bluecollar.fake-worker/fake-worker-failures)))
+      )))

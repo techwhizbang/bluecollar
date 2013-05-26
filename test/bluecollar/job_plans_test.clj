@@ -32,7 +32,7 @@
 
   (testing "takes a worker, vector of args, UUID, and scheduled-runtime"
     (let [uuid (str (java.util.UUID/randomUUID))
-          now (time/now)
+          now (str (time/now))
           job-plan (struct plan/job-plan :b-worker ["c" "d"] uuid now)]
         (is (= job-plan {:worker :b-worker, 
                          :args ["c" "d"], 
@@ -56,7 +56,7 @@
     )
 
   (testing "converts a plan to JSON with a scheduled-runtime"
-    (let [now (time/now)
+    (let [now (str (time/now))
           job-plan (plan/new-job-plan :hard-worker [1 2] nil now)]
       (is (= (plan/as-json job-plan)
         (str "{\"worker\":\"hard-worker\",\"args\":[1,2],\"uuid\":null,\"scheduled-runtime\":\"" now "\"}")))))
@@ -170,5 +170,27 @@
   )
 
 (deftest on-failure-test
-  (testing "re-enqueues the job plan when the worker allows retries")
-  (testing "does not re-enqueue the job plan when the worker does not allow retries"))
+  (testing "re-enqueues the job plan when the worker allows retries"
+    (let [now-ish (time/now)]
+      (stubbing [plan/retry-on-failure? true
+                 time/now now-ish]
+        (let [workers {:hard-worker (struct union-rep/worker-definition
+                                            bluecollar.fake-worker/perform
+                                            "crunch-numbers"
+                                            true)}
+              _ (union-rep/register-workers workers)
+              job-plan-original (plan/new-job-plan :hard-worker [123])
+              job-plan-to-retry (assoc job-plan-original :scheduled-runtime (str (time/plus now-ish (time/secs (deref plan/delay-base)))))  
+              _ (plan/on-failure job-plan-original)]
+          (is (= job-plan-to-retry (plan/from-json (redis/pop "crunch-numbers"))))))))
+
+  (testing "does not re-enqueue the job plan when the worker does not allow retries"
+    (let [workers {:hard-worker (struct union-rep/worker-definition
+                                        bluecollar.fake-worker/perform
+                                        "crunch-numbers"
+                                        false)}
+          _ (union-rep/register-workers workers)
+          job-plan (plan/new-job-plan :hard-worker [123])
+          _ (plan/on-failure job-plan)]
+      (is (nil? (redis/pop "crunch-numbers")))
+    )))
