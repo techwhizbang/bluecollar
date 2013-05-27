@@ -4,15 +4,21 @@
             [bluecollar.job-plans :as plan]))
 
 (def ^:private thread-pool (atom nil))
+(def ^:private scheduled-thread-pool (atom nil))
+
 (def ^:private hostname (atom nil))
 
 (defn- start-pool [thread-count]
-  (let [pool (. Executors newFixedThreadPool thread-count)]
+  (let [pool (. Executors newFixedThreadPool thread-count)
+        scheduled-pool (. Executors newScheduledThreadPool thread-count)]
     (reset! thread-pool pool)
-    (.prestartAllCoreThreads @thread-pool)))
+    (reset! scheduled-thread-pool scheduled-pool)
+    (.prestartAllCoreThreads @thread-pool)
+    (.prestartAllCoreThreads @scheduled-thread-pool)))
 
 (defn- stop-pool []
-  (.shutdown @thread-pool))
+  (.shutdown @thread-pool)
+  (.shutdown @scheduled-thread-pool))
 
 (defn worker-count []
   "Returns the total number of workers."
@@ -34,6 +40,7 @@
   "Dispatches a job plan function to the worker pool."
   (.execute @thread-pool job-plan-fn))
 
+; TODO: determine if the job-plan is standard or has a scheduled runtime
 (defn dispatch-work [job-plan]
   "Convert the given job plan for a worker, and dispatch a worker."
   (dispatch-worker (plan/for-worker job-plan)))
