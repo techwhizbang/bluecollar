@@ -4,12 +4,12 @@
             [bluecollar.job-plans :as plan]))
 
 (def ^:private thread-pool (atom nil))
+(def ^:private hostname (atom nil))
 
 (defn- start-pool [thread-count]
   (let [pool (. Executors newFixedThreadPool thread-count)]
-    (do
-      (reset! thread-pool pool)
-      (.prestartAllCoreThreads @thread-pool))))
+    (reset! thread-pool pool)
+    (.prestartAllCoreThreads @thread-pool)))
 
 (defn- stop-pool []
   (.shutdown @thread-pool))
@@ -18,15 +18,17 @@
   "Returns the total number of workers."
   (.getPoolSize @thread-pool))
 
+;TODO start workers and then push to Redis the # of available workers and what host and queue
+; {:host "server.xyx.123" :queue "foo bar"}
 (defn start-workers [worker-count]
   "Starts the given number of workers."
-  (do
-    (start-pool worker-count)))
+  (reset! hostname (.getHostName (java.net.InetAddress/getLocalHost)))
+  (start-pool worker-count))
 
+;TODO stop workers and then delete from Redis the # of workers from this host and queue
 (defn stop-workers []
   "Stops the workers gracefully by letting them complete any jobs already started."
-  (do
-    (stop-pool)))
+  (stop-pool))
 
 (defn dispatch-worker [job-plan-fn]
   "Dispatches a job plan function to the worker pool."

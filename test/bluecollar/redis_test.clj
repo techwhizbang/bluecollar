@@ -1,7 +1,7 @@
-(ns bluecollar.redis-message-storage-test
+(ns bluecollar.redis-test
   (:use clojure.test
         bluecollar.test-helper)
-  (:require [bluecollar.redis-message-storage :as redis]))
+  (:require [bluecollar.redis :as redis]))
 
 (use-redis-test-setup)
 

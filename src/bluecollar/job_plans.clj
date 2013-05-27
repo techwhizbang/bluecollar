@@ -3,7 +3,7 @@
             [clj-time.core :as time]
             [clj-time.coerce :as time-parser]
             [bluecollar.union-rep :as union-rep]
-            [bluecollar.redis-message-storage :as redis]))
+            [bluecollar.redis :as redis]))
 
 (defstruct job-plan :worker :args :uuid :scheduled-runtime)
 

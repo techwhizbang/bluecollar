@@ -1,12 +1,12 @@
 (ns bluecollar.superintendent-test
   (:use clojure.test
     bluecollar.test-helper)
-  (:require [bluecollar.redis-message-storage :as redis]
-    [bluecollar.fake-worker]
-    [bluecollar.union-rep :as union-rep]
-    [bluecollar.superintendent :as boss]
-    [bluecollar.job-plans :as plan]
-    [cheshire.core :as json]))
+  (:require [bluecollar.redis :as redis]
+            [bluecollar.fake-worker]
+            [bluecollar.union-rep :as union-rep]
+            [bluecollar.superintendent :as boss]
+            [bluecollar.job-plans :as plan]
+            [cheshire.core :as json]))
 
 (use-redis-test-setup)
 

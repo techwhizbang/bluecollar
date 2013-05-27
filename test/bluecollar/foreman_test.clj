@@ -2,9 +2,9 @@
   (:use clojure.test
         bluecollar.test-helper)
   (:require [bluecollar.foreman :as foreman]
-    [bluecollar.job-plans :as plan]
-    [bluecollar.fake-worker]
-    [bluecollar.union-rep :as union-rep]))
+            [bluecollar.job-plans :as plan]
+            [bluecollar.fake-worker]
+            [bluecollar.union-rep :as union-rep]))
 
 (def number-of-workers 5)
 

@@ -2,7 +2,7 @@
   (:use clojure.test
     bluecollar.test-helper)
   (:require [bluecollar.union-rep :as union-rep]
-    [bluecollar.fake-worker]))
+            [bluecollar.fake-worker]))
 
 (use-fixtures :each (fn [f]
   (reset! union-rep/registered-workers {})

@@ -4,7 +4,7 @@
     conjure.core)
   (:require [clj-time.core :as time]
             [bluecollar.job-plans :as plan]
-            [bluecollar.redis-message-storage :as redis]
+            [bluecollar.redis :as redis]
             [bluecollar.union-rep :as union-rep]
             [bluecollar.fake-worker]))
 

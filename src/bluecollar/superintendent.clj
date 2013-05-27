@@ -1,8 +1,8 @@
 (ns bluecollar.superintendent
-  (:require [bluecollar.redis-message-storage :as redis]
-    [bluecollar.foreman :as foreman]
-    [bluecollar.job-plans :as plan]
-    [cheshire.core :as json]))
+  (:require [bluecollar.redis :as redis]
+            [bluecollar.foreman :as foreman]
+            [bluecollar.job-plans :as plan]
+            [cheshire.core :as json]))
 
 (def ^:private keep-everyone-working (atom true))
 
