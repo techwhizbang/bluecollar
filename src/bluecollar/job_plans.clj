@@ -1,11 +1,25 @@
 (ns bluecollar.job-plans
   (:require [cheshire.core :as json]
             [clj-time.core :as time]
-            [clj-time.coerce :as time-parser]
+            [clj-time.coerce :as time-coerce]
+            [clj-time.format :as time-parser]
             [bluecollar.union-rep :as union-rep]
             [bluecollar.redis :as redis]))
 
-(defstruct job-plan :worker :args :uuid :scheduled-runtime)
+(defprotocol Schedulable
+  (schedulable? [_] "Returns true or false depending on whether the implementation can be scheduled for the future.")
+  (secs-to-runtime [_] "Number of seconds remaining before it is run."))
+
+(defrecord JobPlan [worker args uuid scheduled-runtime]
+  Schedulable
+  (schedulable? [this] 
+    (if-not (nil? (:scheduled-runtime this))
+      (let [parsed-scheduled-runtime (time-parser/parse (:scheduled-runtime this))]
+        (time/after? parsed-scheduled-runtime (time/now)))
+      false))
+  (secs-to-runtime [this] (if (schedulable? this)
+                            (long (/ (- (time-coerce/to-long (time-parser/parse (:scheduled-runtime this))) (time-coerce/to-long (time/now))) 1000.0))
+                            (long 0))))
 
 (def maximum-failures
   "The maximum number of failures retry will exhaust. Re-define this threshold if you see fit."
@@ -16,6 +30,8 @@
    count is the exponent."
   (atom 5))
 
+(defn generate-uuid [] (str (java.util.UUID/randomUUID)))
+
 (defn new-job-plan
   "Instantiates a new 'job plan' for a worker to perform.
    Example: (new-job-plan :hard-worker [1 2 3])
@@ -23,8 +39,8 @@
    The args should be specified as a Vector and must match the order and arity of the worker's function argument(s).
    The optional scheduled runtime must be specified in ISO8601 date/time string format (ie. 2013-05-25T23:40:15.011Z)." 
   ([worker args] (new-job-plan worker args nil))
-  ([worker args scheduled-runtime] (new-job-plan worker args (str (java.util.UUID/randomUUID)) scheduled-runtime))
-  ([worker args uuid scheduled-runtime] (struct job-plan (keyword worker) args uuid scheduled-runtime)))
+  ([worker args scheduled-runtime] (new-job-plan worker args (generate-uuid) scheduled-runtime))
+  ([worker args uuid scheduled-runtime] (->JobPlan (keyword worker) args uuid scheduled-runtime)))
 
 (defn as-json [job-plan]
   (if-let [scheduled-runtime (get job-plan :scheduled-runtime)]
@@ -74,16 +90,16 @@
         scheduled-job-plan (assoc job-plan :scheduled-runtime scheduled-runtime)]
     (enqueue scheduled-job-plan)))
 
-;TODO
-; on receipt of a retried job 
-;   if the scheduled time is <= NOW
-;     dispatch worker
-;   if the scheduled time is > NOW
-;     schedule worker for (scheduled time - NOW) in seconds
-(defn on-failure [job-plan]
+;TODO need to remove the job plan UUID from the failed workers hash if it isn't retryable
+(defn on-failure 
+  "If allowable retry the failed job-plan; otherwise remove it from the processing queue
+   and remove the UUID from the failed workers hash."
+  [job-plan]
   (if (retry-on-failure? job-plan)
-    (retry job-plan)))
+    (retry job-plan)
+    (redis/processing-pop (as-json job-plan))))
 
+;TODO rename this defn to as-runnable
 (defn for-worker [job-plan]
   (let [worker-name (get job-plan :worker)
         registered-worker (union-rep/find-worker worker-name)

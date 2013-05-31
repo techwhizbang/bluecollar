@@ -1,7 +1,8 @@
 (ns bluecollar.foreman
   (:import java.util.concurrent.Executors)
   (:require [bluecollar.union-rep :as union-rep]
-            [bluecollar.job-plans :as plan]))
+            [bluecollar.job-plans :as plan]
+            ))
 
 (def ^:private thread-pool (atom nil))
 (def ^:private scheduled-thread-pool (atom nil))
@@ -40,10 +41,17 @@
   "Dispatches a job plan function to the worker pool."
   (.execute @thread-pool job-plan-fn))
 
-; TODO: determine if the job-plan is standard or has a scheduled runtime
+;TODO unify the signature of dispatch-scheduled-worker and dispatch-worker defns
+(defn dispatch-scheduled-worker [job-plan]
+  (let [scheduled-runtime (.secs-to-runtime job-plan)
+        runnable-job-plan (plan/for-worker job-plan)]
+    (.schedule @scheduled-thread-pool runnable-job-plan scheduled-runtime (java.util.concurrent.TimeUnit/SECONDS))))
+
 (defn dispatch-work [job-plan]
   "Convert the given job plan for a worker, and dispatch a worker."
-  (dispatch-worker (plan/for-worker job-plan)))
+  (if (.schedulable? job-plan)
+    (dispatch-scheduled-worker job-plan)
+    (dispatch-worker (plan/for-worker job-plan))))
 
 
 

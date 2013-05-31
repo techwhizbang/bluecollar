@@ -8,9 +8,9 @@
             [bluecollar.job-plans :as plan]
             [cheshire.core :as json]))
 
-(use-redis-test-setup)
-
 (use-fixtures :each (fn [f]
+  (redis/startup redis-test-settings)
+  (redis/flushdb)
   (reset! bluecollar.fake-worker/perform-called false)
   (f)))
 
@@ -28,8 +28,7 @@
           in-processing-vals (redis/lrange (deref redis/processing-queue) 0 0)]
       (is (true? (deref bluecollar.fake-worker/perform-called)))
       (is (empty? in-processing-vals))
-      )
-    )
+      ))
 
   (testing "a failing worker is retried the maximum number of times without crashing the process"
     (let [_ (reset! plan/delay-base 1)
@@ -40,7 +39,7 @@
           _ (union-rep/register-workers workers)
           _ (future (boss/start testing-queue-name 5))
           _ (plan/enqueue :failing-worker [])
-          _ (Thread/sleep 2000)
+          _ (Thread/sleep 5000)
           _ (boss/stop)]
       (is (= 25 (deref bluecollar.fake-worker/fake-worker-failures)))
       )))

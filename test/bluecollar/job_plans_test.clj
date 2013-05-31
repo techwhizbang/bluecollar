@@ -14,31 +14,22 @@
   (reset! bluecollar.fake-worker/perform-called false)
   (f)))
 
-(deftest job-plan-struct-test
+(deftest job-plan-test
   (testing "takes a worker and a vector of args"
-    (let [job-plan (struct plan/job-plan :a-worker ["a" "b"])]
-      (is (= job-plan {:worker :a-worker, 
-                       :args ["a" "b"], 
-                       :uuid nil
-                       :scheduled-runtime nil}))))
+    (let [job-plan (plan/new-job-plan :a-worker ["a" "b"])]
+      (is (= job-plan (plan/->JobPlan :a-worker, ["a" "b"] (:uuid job-plan) nil)))))
 
-  (testing "takes a worker, vector of args, and a UUID"
-    (let [uuid (str (java.util.UUID/randomUUID))
-          job-plan (struct plan/job-plan :b-worker ["c" "d"] uuid)]
-        (is (= job-plan {:worker :b-worker, 
-                         :args ["c" "d"], 
-                         :uuid uuid
-                         :scheduled-runtime nil}))))
+  (testing "takes a worker, vector of args, and a scheduled-runtime"
+    (stubbing [plan/generate-uuid "random-uuid"]
+      (let [now (str (time/now))
+            job-plan (plan/new-job-plan :b-worker ["c" "d"] now)]
+          (is (= job-plan (plan/->JobPlan :b-worker, ["c" "d"], "random-uuid", now))))))
 
   (testing "takes a worker, vector of args, UUID, and scheduled-runtime"
     (let [uuid (str (java.util.UUID/randomUUID))
           now (str (time/now))
-          job-plan (struct plan/job-plan :b-worker ["c" "d"] uuid now)]
-        (is (= job-plan {:worker :b-worker, 
-                         :args ["c" "d"], 
-                         :uuid uuid
-                         :scheduled-runtime now}))))
-  )
+          job-plan (plan/new-job-plan :b-worker ["c" "d"] uuid now)]
+        (is (= job-plan (plan/->JobPlan :b-worker, ["c" "d"], uuid, now))))))
 
 (deftest new-job-plan-test
   (testing "creates a new job plan with a UUID"
@@ -193,4 +184,38 @@
           job-plan (plan/new-job-plan :hard-worker [123])
           _ (plan/on-failure job-plan)]
       (is (nil? (redis/pop "crunch-numbers")))
-    )))
+    ))
+
+  (testing "removes the job plan from the processing queue if it cannot be retried"
+    (stubbing [plan/retry-on-failure? false]
+      (let [processing-queue (deref redis/processing-queue)
+            job-plan (plan/new-job-plan :hard-worker [1 3])
+            _ (redis/push processing-queue (plan/as-json job-plan))
+            current-vals (redis/lrange processing-queue 0 0)
+            _ (plan/on-failure job-plan)
+            remaining-vals (redis/lrange processing-queue 0 0)]
+          (is (not (empty? current-vals)))
+          (is (empty? remaining-vals))
+        ))))
+
+(deftest schedulable-test
+  (testing "returns true when a scheduled runtime is present and is in the future"
+    (let [a-job-plan (plan/new-job-plan :hard-worker [123] (str (time/plus (time/now) (time/minutes 2))))]
+      (is (= true (.schedulable? a-job-plan)))))
+
+  (testing "returns false when a scheduled runtime is present but is in the past"
+    (let [a-job-plan (plan/new-job-plan :hard-worker [123] (str (time/minus (time/now) (time/minutes 2))))]
+      (is (= false (.schedulable? a-job-plan)))))
+
+  (testing "returns false when a scheduled runtime is not present"
+    (let [a-job-plan (plan/new-job-plan :hard-worker [123])]
+      (is (= false (.schedulable? a-job-plan))))))
+
+(deftest secs-to-runtime-test
+  (testing "returns a positive Long value representing seconds"
+    (let [a-job-plan (plan/new-job-plan :hard-worker [123] (str (time/plus (time/now) (time/minutes 2))))]
+      (is (= (> 0 (.secs-to-runtime a-job-plan))))))
+
+  (testing "returns 0 when the job is not schedulable"
+    (let [a-job-plan (plan/new-job-plan :hard-worker [123])]
+      (is (= 0 (.secs-to-runtime a-job-plan))))))
