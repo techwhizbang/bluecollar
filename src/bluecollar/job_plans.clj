@@ -92,12 +92,13 @@
 
 ;TODO need to remove the job plan UUID from the failed workers hash if it isn't retryable
 (defn on-failure 
-  "If allowable retry the failed job-plan; otherwise remove it from the processing queue
-   and remove the UUID from the failed workers hash."
+  "If allowable retry the failed job-plan. 
+   Always remove the failed job from the processing queue.
+   If the job-plan isn't retryable then remove it's UUID from the failed workers hash."
   [job-plan]
+  (redis/processing-pop (as-json job-plan))
   (if (retry-on-failure? job-plan)
-    (retry job-plan)
-    (redis/processing-pop (as-json job-plan))))
+    (retry job-plan)))
 
 ;TODO rename this defn to as-runnable
 (defn for-worker [job-plan]

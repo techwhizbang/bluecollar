@@ -173,7 +173,9 @@
               job-plan-original (plan/new-job-plan :hard-worker [123])
               job-plan-to-retry (assoc job-plan-original :scheduled-runtime (str (time/plus now-ish (time/secs (deref plan/delay-base)))))  
               _ (plan/on-failure job-plan-original)]
-          (is (= job-plan-to-retry (plan/from-json (redis/pop "crunch-numbers"))))))))
+          (is (= job-plan-to-retry (plan/from-json (redis/pop "crunch-numbers"))))
+          (is (not (nil? (redis/processing-pop (plan/as-json job-plan-to-retry)))))
+          ))))
 
   (testing "does not re-enqueue the job plan when the worker does not allow retries"
     (let [workers {:hard-worker (struct union-rep/worker-definition
