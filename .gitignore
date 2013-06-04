@@ -1,6 +1,7 @@
 /target
 /lib
 /classes
+*.log*
 /checkouts
 pom.xml
 pom.xml.asc
