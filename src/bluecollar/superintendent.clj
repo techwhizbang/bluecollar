@@ -2,7 +2,8 @@
   (:require [bluecollar.redis :as redis]
             [bluecollar.foreman :as foreman]
             [bluecollar.job-plans :as plan]
-            [cheshire.core :as json]))
+            [cheshire.core :as json]
+            [clojure.tools.logging :as logger]))
 
 (def ^:private keep-everyone-working (atom true))
 
@@ -15,6 +16,7 @@
    The foreman takes the job plans and dispatches the workers accordingly."
   [queue-name worker-count]
   (reset! keep-everyone-working true)
+  (logger/info "Starting the worker thread pool for " queue-name)
   (foreman/start-workers worker-count)
   (while @keep-everyone-working
     (let [value (redis/blocking-pop queue-name)]
@@ -24,5 +26,6 @@
 
 (defn stop []
   (reset! keep-everyone-working false)
+  (logger/info "Stopping the worker thread pool")
   (foreman/stop-workers))
 

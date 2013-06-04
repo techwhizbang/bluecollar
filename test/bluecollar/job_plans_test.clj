@@ -209,21 +209,32 @@
 (deftest schedulable-test
   (testing "returns true when a scheduled runtime is present and is in the future"
     (let [a-job-plan (plan/new-job-plan :hard-worker [123] (str (time/plus (time/now) (time/minutes 2))))]
-      (is (= true (.schedulable? a-job-plan)))))
+      (is (= true (plan/schedulable? a-job-plan)))))
 
   (testing "returns false when a scheduled runtime is present but is in the past"
     (let [a-job-plan (plan/new-job-plan :hard-worker [123] (str (time/minus (time/now) (time/minutes 2))))]
-      (is (= false (.schedulable? a-job-plan)))))
+      (is (= false (plan/schedulable? a-job-plan)))))
 
   (testing "returns false when a scheduled runtime is not present"
     (let [a-job-plan (plan/new-job-plan :hard-worker [123])]
-      (is (= false (.schedulable? a-job-plan))))))
+      (is (= false (plan/schedulable? a-job-plan))))))
 
 (deftest secs-to-runtime-test
   (testing "returns a positive Long value representing seconds"
     (let [a-job-plan (plan/new-job-plan :hard-worker [123] (str (time/plus (time/now) (time/minutes 2))))]
-      (is (= (> 0 (.secs-to-runtime a-job-plan))))))
+      (is (= (> 0 (plan/secs-to-runtime a-job-plan))))))
 
   (testing "returns 0 when the job is not schedulable"
     (let [a-job-plan (plan/new-job-plan :hard-worker [123])]
-      (is (= 0 (.secs-to-runtime a-job-plan))))))
+      (is (= 0 (plan/secs-to-runtime a-job-plan))))))
+
+(deftest hookable-test
+  (testing "when JobPlan implements the Hookable protocol"
+    (extend-type bluecollar.job_plans.JobPlan
+      plan/Hookable
+      (before [_] 1)
+      (after [_] 2))
+    (let [a-job-plan (plan/new-job-plan :hard-worker [123])]
+      (is (extends? plan/Hookable bluecollar.job_plans.JobPlan))
+      (is (= 1 (plan/before a-job-plan)))
+      (is (= 2 (plan/after a-job-plan))))))

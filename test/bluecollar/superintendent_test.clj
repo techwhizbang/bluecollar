@@ -39,7 +39,7 @@
           _ (union-rep/register-workers workers)
           _ (future (boss/start testing-queue-name 5))
           _ (plan/enqueue :failing-worker [])
-          _ (Thread/sleep 5000)
+          _ (Thread/sleep 2000)
           _ (boss/stop)]
       (is (= 25 (deref bluecollar.fake-worker/fake-worker-failures)))
       )))

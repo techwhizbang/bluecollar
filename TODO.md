@@ -8,13 +8,7 @@
 * Reporting mechanism for when jobs fail.
     * daily email journal
 * Lots of great logging
-    * framework level logging
-    * worker level logging
     * ability to specify a separate log for a worker
-* Worker registry contains the following for each worker:
-    * fn
-    * queue
-    * retry
 * Indicate server hostname the job plan is being executed.
 * Scheduled jobs
     * Ability to "enqueue" a job to run in the future.

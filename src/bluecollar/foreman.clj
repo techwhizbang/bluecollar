@@ -2,7 +2,7 @@
   (:import java.util.concurrent.Executors)
   (:require [bluecollar.union-rep :as union-rep]
             [bluecollar.job-plans :as plan]
-            ))
+            [clojure.tools.logging :as logger]))
 
 (def ^:private fixed-thread-pool (atom nil))
 (def ^:private scheduled-thread-pool (atom nil))
@@ -43,13 +43,14 @@
 
 (defn dispatch-scheduled-worker [job-plan]
   "Dispatches a scheduled job plan to the dedicated scheduling thread pool."
-  (let [scheduled-runtime (.secs-to-runtime job-plan)
+  (let [scheduled-runtime (plan/secs-to-runtime job-plan)
         runnable-job-plan (plan/as-runnable job-plan)]
     (.schedule @scheduled-thread-pool runnable-job-plan scheduled-runtime (java.util.concurrent.TimeUnit/SECONDS))))
 
 (defn dispatch-work [job-plan]
   "Dispatch the appropriate worker based on the given job-plan."
-  (if (.schedulable? job-plan)
+  (logger/info "Dispatching a worker for JobPlan with UUID: " (:uuid job-plan))
+  (if (plan/schedulable? job-plan)
     (dispatch-scheduled-worker job-plan)
     (dispatch-worker job-plan)))
 

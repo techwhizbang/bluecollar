@@ -4,13 +4,21 @@
             [clj-time.coerce :as time-coerce]
             [clj-time.format :as time-parser]
             [bluecollar.union-rep :as union-rep]
-            [bluecollar.redis :as redis]))
+            [bluecollar.redis :as redis]
+            [clojure.tools.logging :as logger]
+            ))
 
 (defprotocol Schedulable
   (schedulable? [_] "Returns true or false depending on whether the implementation can be scheduled for the future.")
   (secs-to-runtime [_] "Number of seconds remaining before it is run."))
 
-(defrecord JobPlan [worker args uuid scheduled-runtime]
+(defprotocol Hookable
+  (before [_] "Add any 'global' functionality that will run exactly prior to every JobPlan's execution.")
+  (after [_] "Add any 'global' functionality that will run exactly after to every JobPlan's execution."))
+
+(defrecord JobPlan [worker args uuid scheduled-runtime]) 
+
+(extend-type JobPlan
   Schedulable
   (schedulable? [this] 
     (if-not (nil? (:scheduled-runtime this))
@@ -63,6 +71,7 @@
           registered-worker (union-rep/find-worker worker-name)]
     (if-not (nil? registered-worker)
       (let [queue (get registered-worker :queue)]
+        (logger/info "enqueuing a job plan for worker" worker-name "with the following arguments" (:args job-plan))
         (redis/push queue (as-json job-plan)))
       (throw (RuntimeException. (str worker-name " was not found in the worker registry.")))
       ))))
@@ -83,12 +92,13 @@
 (defn retry-delay [failures] (Math/pow @delay-base failures))
 
 (defn- retry [job-plan]
-  (let [failures (redis/failure-count (:uuid job-plan))
+  (let [uuid (:uuid job-plan)
+        failures (redis/failure-count uuid)
         scheduled-runtime (str (time/plus (time/now) (time/secs (retry-delay failures))))
         scheduled-job-plan (assoc job-plan :scheduled-runtime scheduled-runtime)]
+    (logger/info "retrying the JobPlan with UUID" uuid "at" scheduled-runtime)
     (enqueue scheduled-job-plan)))
 
-;TODO need to remove the job plan UUID from the failed workers hash if it isn't retryable
 (defn on-failure 
   "Always remove the failed job from the processing queue.
    If allowable, retry the failed job-plan, otherwise remove it's UUID from the failed workers hash."
@@ -105,13 +115,20 @@
   (let [worker-name (get job-plan :worker)
         registered-worker (union-rep/find-worker worker-name)
         worker-fn (get registered-worker :fn)
+        uuid (:uuid job-plan)
         args (get job-plan :args)]
     (fn [] 
       (try
-        (apply worker-fn args)
+        (logger/info "executing a JobPlan with UUID:" uuid "for worker" worker-name)
+        (if (extends? Hookable JobPlan)
+          (do  
+            (before job-plan)
+            (apply worker-fn args)
+            (after job-plan))
+          (apply worker-fn args))
         (on-success job-plan)
       (catch Exception e
-        (prn "caught exception: " (.getMessage e))
+        (logger/error e "there was an error when executing JobPlan with UUID:" uuid "for worker" worker-name)
         (on-failure job-plan)
         )))
     ))
