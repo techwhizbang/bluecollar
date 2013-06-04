@@ -100,8 +100,7 @@
   (if (retry-on-failure? job-plan)
     (retry job-plan)))
 
-;TODO rename this defn to as-runnable
-(defn for-worker [job-plan]
+(defn as-runnable [job-plan]
   (let [worker-name (get job-plan :worker)
         registered-worker (union-rep/find-worker worker-name)
         worker-fn (get registered-worker :fn)

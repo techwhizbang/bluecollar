@@ -60,10 +60,10 @@
       (is (= (plan/from-json a-json-plan) a-job-plan))
       )))
 
-(deftest plan-for-worker-test
+(deftest plan-as-runnable-test
   (testing "converts a plan map for a worker"
     (let [job-plan (plan/new-job-plan :hard-worker [1 2])]
-      (is (fn? (plan/for-worker job-plan)))
+      (is (fn? (plan/as-runnable job-plan)))
       ))
 
   (testing "makes an executable function for the worker"
@@ -73,7 +73,7 @@
                                         false)}
           _ (union-rep/register-workers workers)
           a-job-plan (plan/new-job-plan :hard-worker [1 2])
-          _ ((plan/for-worker a-job-plan))]
+          _ ((plan/as-runnable a-job-plan))]
       (is (true? (deref bluecollar.fake-worker/perform-called)))
       ))
   )
