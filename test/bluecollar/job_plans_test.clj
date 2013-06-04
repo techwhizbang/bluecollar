@@ -1,7 +1,7 @@
 (ns bluecollar.job-plans-test
   (:use clojure.test
-    bluecollar.test-helper
-    conjure.core)
+        bluecollar.test-helper
+        conjure.core)
   (:require [clj-time.core :as time]
             [bluecollar.job-plans :as plan]
             [bluecollar.redis :as redis]
@@ -188,17 +188,23 @@
       (is (nil? (redis/pop "crunch-numbers")))
     ))
 
-  (testing "removes the job plan from the processing queue if it cannot be retried"
+  (testing "removes the job plan from the failures hash if not retryable"
     (stubbing [plan/retry-on-failure? false]
-      (let [processing-queue (deref redis/processing-queue)
-            job-plan (plan/new-job-plan :hard-worker [1 3])
-            _ (redis/push processing-queue (plan/as-json job-plan))
-            current-vals (redis/lrange processing-queue 0 0)
-            _ (plan/on-failure job-plan)
-            remaining-vals (redis/lrange processing-queue 0 0)]
-          (is (not (empty? current-vals)))
-          (is (empty? remaining-vals))
-        ))))
+      (let [job-plan (plan/new-job-plan :hard-worker [123])
+            _ (redis/failure-inc (:uuid job-plan))
+            _ (plan/on-failure job-plan)]
+        (is (= 0 (redis/failure-count (:uuid job-plan)))))))
+
+  (testing "always removes the job plan from the processing queue"
+    (let [processing-queue (deref redis/processing-queue)
+          job-plan (plan/new-job-plan :hard-worker [1 3])
+          _ (redis/push processing-queue (plan/as-json job-plan))
+          current-vals (redis/lrange processing-queue 0 0)
+          _ (plan/on-failure job-plan)
+          remaining-vals (redis/lrange processing-queue 0 0)]
+        (is (not (empty? current-vals)))
+        (is (empty? remaining-vals))
+      )))
 
 (deftest schedulable-test
   (testing "returns true when a scheduled runtime is present and is in the future"

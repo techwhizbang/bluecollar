@@ -83,22 +83,23 @@
 (defn retry-delay [failures] (Math/pow @delay-base failures))
 
 (defn- retry [job-plan]
-  (let [uuid (get job-plan :uuid)
-        _ (redis/failure-inc uuid)
-        failures (redis/failure-count uuid)
+  (let [failures (redis/failure-count (:uuid job-plan))
         scheduled-runtime (str (time/plus (time/now) (time/secs (retry-delay failures))))
         scheduled-job-plan (assoc job-plan :scheduled-runtime scheduled-runtime)]
     (enqueue scheduled-job-plan)))
 
 ;TODO need to remove the job plan UUID from the failed workers hash if it isn't retryable
 (defn on-failure 
-  "If allowable retry the failed job-plan. 
-   Always remove the failed job from the processing queue.
-   If the job-plan isn't retryable then remove it's UUID from the failed workers hash."
+  "Always remove the failed job from the processing queue.
+   If allowable, retry the failed job-plan, otherwise remove it's UUID from the failed workers hash."
   [job-plan]
   (redis/processing-pop (as-json job-plan))
-  (if (retry-on-failure? job-plan)
-    (retry job-plan)))
+  (let [uuid (:uuid job-plan)]
+    (if (retry-on-failure? job-plan)
+      (do
+        (redis/failure-inc uuid)
+        (retry job-plan))
+      (redis/failure-delete uuid))))
 
 (defn as-runnable [job-plan]
   (let [worker-name (get job-plan :worker)

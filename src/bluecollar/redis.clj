@@ -61,6 +61,10 @@
   ([uuid] (failure-inc uuid @pool-and-settings))
   ([uuid redis-conn] (with-redis-conn redis-conn (redis-client/hincrby @failures-hash uuid 1))))
 
+(defn failure-delete
+  ([uuid] (failure-delete uuid @pool-and-settings))
+  ([uuid redis-conn] (with-redis-conn redis-conn (redis-client/hdel @failures-hash uuid))))
+
 (defn processing-pop
   "Removes the last occurrence of the given value from the processing queue."
   ([value] (processing-pop value @pool-and-settings))

@@ -30,6 +30,17 @@
     (is (= 2 (redis/failure-count "cheese")))
     ))
 
+(deftest delete-failure-test
+  (testing "it removes a key from the failures hash"
+    (redis/failure-inc "pizza")
+    (is (= 1 (redis/failure-count "pizza")))
+    (redis/failure-delete "pizza")
+    (is (= 0 (redis/failure-count "pizza"))))
+
+  (testing "it doesn't complain if the key doesn't exist in the failures hash"
+    (redis/failure-delete "mushroom frittata")
+    (is (= 0 (redis/failure-count "mushroom frittata")))))
+
 (deftest push-value-onto-queue
   (testing "pushes a String value onto a named queued"
     (is (= (redis/push "bacon" "eggs") 1)))
