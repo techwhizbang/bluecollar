@@ -4,7 +4,7 @@
             [bluecollar.job-plans :as plan]
             ))
 
-(def ^:private thread-pool (atom nil))
+(def ^:private fixed-thread-pool (atom nil))
 (def ^:private scheduled-thread-pool (atom nil))
 
 (def ^:private hostname (atom nil))
@@ -12,18 +12,18 @@
 (defn- start-pool [thread-count]
   (let [pool (. Executors newFixedThreadPool thread-count)
         scheduled-pool (. Executors newScheduledThreadPool thread-count)]
-    (reset! thread-pool pool)
+    (reset! fixed-thread-pool pool)
     (reset! scheduled-thread-pool scheduled-pool)
-    (.prestartAllCoreThreads @thread-pool)
+    (.prestartAllCoreThreads @fixed-thread-pool)
     (.prestartAllCoreThreads @scheduled-thread-pool)))
 
 (defn- stop-pool []
-  (.shutdown @thread-pool)
+  (.shutdown @fixed-thread-pool)
   (.shutdown @scheduled-thread-pool))
 
 (defn worker-count []
   "Returns the total number of workers."
-  (.getPoolSize @thread-pool))
+  (.getPoolSize @fixed-thread-pool))
 
 ;TODO start workers and then push to Redis the # of available workers and what host and queue
 ; {:host "server.xyx.123" :queue "foo bar"}
@@ -37,21 +37,21 @@
   "Stops the workers gracefully by letting them complete any jobs already started."
   (stop-pool))
 
-(defn dispatch-worker [job-plan-fn]
-  "Dispatches a job plan function to the worker pool."
-  (.execute @thread-pool job-plan-fn))
+(defn dispatch-worker [job-plan]
+  "Dispatches a job plan to the worker pool."
+  (.execute @fixed-thread-pool (plan/as-runnable job-plan)))
 
-;TODO unify the signature of dispatch-scheduled-worker and dispatch-worker defns
 (defn dispatch-scheduled-worker [job-plan]
+  "Dispatches a scheduled job plan to the dedicated scheduling thread pool."
   (let [scheduled-runtime (.secs-to-runtime job-plan)
         runnable-job-plan (plan/as-runnable job-plan)]
     (.schedule @scheduled-thread-pool runnable-job-plan scheduled-runtime (java.util.concurrent.TimeUnit/SECONDS))))
 
 (defn dispatch-work [job-plan]
-  "Convert the given job plan for a worker, and dispatch a worker."
+  "Dispatch the appropriate worker based on the given job-plan."
   (if (.schedulable? job-plan)
     (dispatch-scheduled-worker job-plan)
-    (dispatch-worker (plan/as-runnable job-plan))))
+    (dispatch-worker job-plan)))
 
 
 

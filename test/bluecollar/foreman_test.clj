@@ -9,9 +9,8 @@
 
 (def number-of-workers 5)
 
-(use-redis-test-setup)
-
 (use-fixtures :each (fn [f]
+  (redis-setup)
   (reset! bluecollar.fake-worker/perform-called false)
   (f)))
 
@@ -26,25 +25,16 @@
     ))
 
 (deftest foreman-dispatch-worker-test
-  (testing "can dispatch a generic worker"
-    (let [counter (atom 0)]
-      (do
-        (foreman/start-workers number-of-workers)
-        (foreman/dispatch-worker (fn [] (swap! counter inc)))
-        (Thread/sleep 500)
-        (is (= @counter 1)))
-      ))
-
-  (testing "can dispatch a worker based on a job plan"
+  
+  (testing "dispatches a worker based on a job plan"
     (let [workers {:fake-worker (struct union-rep/worker-definition
                                         bluecollar.fake-worker/perform
                                         testing-queue-name false)}
           _ (union-rep/register-workers workers)
-          a-job-plan (plan/new-job-plan :fake-worker [1 2])
-          job-for-worker (plan/as-runnable a-job-plan)]
+          a-job-plan (plan/new-job-plan :fake-worker [1 2])]
       (do
         (foreman/start-workers number-of-workers)
-        (foreman/dispatch-worker job-for-worker)
+        (foreman/dispatch-worker a-job-plan)
         (Thread/sleep 500)
         (is (true? (deref bluecollar.fake-worker/perform-called))))
       )))
