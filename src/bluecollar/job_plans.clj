@@ -20,6 +20,7 @@
 
 (extend-type JobPlan
   Schedulable
+  Schedulable
   (schedulable? [this] 
     (if-not (nil? (:scheduled-runtime this))
       (let [parsed-scheduled-runtime (time-parser/parse (:scheduled-runtime this))]

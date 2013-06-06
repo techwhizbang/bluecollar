@@ -1,5 +1,6 @@
 (ns bluecollar.foreman
-  (:import java.util.concurrent.Executors)
+  (:import java.util.concurrent.Executors
+           java.util.concurrent.ExecutorService)
   (:require [bluecollar.union-rep :as union-rep]
             [bluecollar.job-plans :as plan]
             [clojure.tools.logging :as logger]))
@@ -8,6 +9,9 @@
 (def ^:private scheduled-thread-pool (atom nil))
 
 (def ^:private hostname (atom nil))
+
+;TODO use atoms for the thread pools ie. (->Foreman 5 (atom nil) (atom nil))
+(defrecord Foreman [#^int worker-count fixed-pool scheduled-pool])
 
 (defn- start-pool [thread-count]
   (let [pool (. Executors newFixedThreadPool thread-count)
