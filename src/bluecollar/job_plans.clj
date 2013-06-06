@@ -5,8 +5,7 @@
             [clj-time.format :as time-parser]
             [bluecollar.union-rep :as union-rep]
             [bluecollar.redis :as redis]
-            [clojure.tools.logging :as logger]
-            ))
+            [clojure.tools.logging :as logger]))
 
 (defprotocol Schedulable
   (schedulable? [_] "Returns true or false depending on whether the implementation can be scheduled for the future.")
@@ -16,7 +15,7 @@
   (before [_] "Add any 'global' functionality that will run exactly prior to every JobPlan's execution.")
   (after [_] "Add any 'global' functionality that will run exactly after to every JobPlan's execution."))
 
-(defrecord JobPlan [worker args uuid scheduled-runtime]) 
+(defrecord JobPlan [worker #^clojure.lang.PersistentVector args uuid scheduled-runtime]) 
 
 (extend-type JobPlan
   Schedulable
@@ -42,7 +41,7 @@
 (defn generate-uuid [] (str (java.util.UUID/randomUUID)))
 
 (defn new-job-plan
-  "Instantiates a new 'job plan' for a worker to perform.
+  "Instantiates a new JobPlan for a worker to perform.
    Example: (new-job-plan :hard-worker [1 2 3])
    The worker should be specified as a keyword, just as it was registered during setup.
    The args should be specified as a Vector and must match the order and arity of the worker's function argument(s).

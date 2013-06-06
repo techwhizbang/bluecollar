@@ -8,7 +8,7 @@
 
 (def ^:private keep-everyone-working (atom true))
 
-(defrecord JobSite [site-name #^bluecollar.foreman.Foreman foreman worker-count]
+(defrecord JobSite [#^String site-name #^bluecollar.foreman.Foreman foreman #^int worker-count]
   Lifecycle
   (startup [this] 
     (reset! keep-everyone-working true)
