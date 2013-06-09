@@ -1,4 +1,5 @@
 (ns bluecollar.foreman
+  (:use bluecollar.lifecycle)
   (:import java.util.concurrent.Executors
            java.util.concurrent.ExecutorService)
   (:require [bluecollar.union-rep :as union-rep]
@@ -9,9 +10,6 @@
 (def ^:private scheduled-thread-pool (atom nil))
 
 (def ^:private hostname (atom nil))
-
-;TODO use atoms for the thread pools ie. (->Foreman 5 (atom nil) (atom nil))
-(defrecord Foreman [#^int worker-count fixed-pool scheduled-pool])
 
 (defn- start-pool [thread-count]
   (let [pool (. Executors newFixedThreadPool thread-count)
@@ -24,6 +22,23 @@
 (defn- stop-pool []
   (.shutdown @fixed-thread-pool)
   (.shutdown @scheduled-thread-pool))
+
+(defrecord Foreman [#^int worker-count fixed-pool scheduled-pool]
+  Lifecycle
+  (startup [this]
+    ; (reset! hostname (.getHostName (java.net.InetAddress/getLocalHost)))
+    (let [thread-cnt (:worker-count this)
+          pool (. Executors newFixedThreadPool thread-cnt)
+          scheduled-pool (. Executors newScheduledThreadPool thread-cnt)]
+      (reset! (:fixed-pool this) pool)
+      (reset! (:scheduled-pool this) scheduled-pool)
+      (.prestartAllCoreThreads @(:fixed-pool this))
+      (.prestartAllCoreThreads @(:scheduled-pool this))))
+  (shutdown [this]
+    (.shutdown @(:fixed-pool this))
+    (.shutdown @(:scheduled-pool this))))
+
+(defn new-foreman [worker-count] (->Foreman worker-count (atom nil) (atom nil)))
 
 (defn worker-count []
   "Returns the total number of workers."

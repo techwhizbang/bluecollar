@@ -1,5 +1,5 @@
 (ns bluecollar.job-sites
-  (:use [bluecollar.lifecycle])
+  (:use bluecollar.lifecycle)
   (:require [bluecollar.redis :as redis]
             [bluecollar.foreman :as foreman]
             [bluecollar.job-plans :as plan]
@@ -23,6 +23,9 @@
     (reset! keep-everyone-working false)
     (logger/info "Stopping JobSite: " (:site-name this))
     (foreman/stop-workers)))
+
+(defn new-job-site [site-name worker-count]
+  (->JobSite site-name (foreman/new-foreman worker-count) worker-count))
 
 (defn start
   "On a JobSite it is the Foreman's job to start the appropriate number of workers and

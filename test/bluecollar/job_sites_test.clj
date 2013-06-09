@@ -43,3 +43,17 @@
           _ (job-site/stop)]
       (is (= 25 (deref bluecollar.fake-worker/fake-worker-failures)))
       )))
+
+(deftest new-job-site-test
+  (let [job-site (job-site/new-job-site "the name" 5)]
+    (testing "returns a new JobSite"
+      (is (instance? bluecollar.job_sites.JobSite job-site)))
+
+    (testing "has a worker count"
+      (is (= 5 (:worker-count job-site))))
+
+    (testing "has a foreman"
+      (is (instance? bluecollar.foreman.Foreman (:foreman job-site))))
+
+    (testing "has a site-name"
+      (is (= "the name" (:site-name job-site))))))
