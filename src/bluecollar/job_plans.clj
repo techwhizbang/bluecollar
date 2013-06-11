@@ -19,12 +19,13 @@
 
 (extend-type JobPlan
   Schedulable
-  Schedulable
+  
   (schedulable? [this] 
     (if-not (nil? (:scheduled-runtime this))
       (let [parsed-scheduled-runtime (time-parser/parse (:scheduled-runtime this))]
         (time/after? parsed-scheduled-runtime (time/now)))
       false))
+  
   (secs-to-runtime [this] (if (schedulable? this)
                             (long (/ (- (time-coerce/to-long (time-parser/parse (:scheduled-runtime this))) (time-coerce/to-long (time/now))) 1000.0))
                             (long 0))))
@@ -71,7 +72,7 @@
           registered-worker (union-rep/find-worker worker-name)]
     (if-not (nil? registered-worker)
       (let [queue (get registered-worker :queue)]
-        (logger/info "enqueuing a job plan for worker" worker-name "with the following arguments" (:args job-plan))
+        (logger/info "enqueuing the job plan" (as-json job-plan) "to" queue "for worker" worker-name)
         (redis/push queue (as-json job-plan)))
       (throw (RuntimeException. (str worker-name " was not found in the worker registry.")))
       ))))
@@ -103,6 +104,7 @@
   "Always remove the failed job from the processing queue.
    If allowable, retry the failed job-plan, otherwise remove it's UUID from the failed workers hash."
   [job-plan]
+  (logger/debug "Removing" (as-json job-plan) "from processing queue")
   (redis/processing-pop (as-json job-plan))
   (let [uuid (:uuid job-plan)]
     (if (retry-on-failure? job-plan)

@@ -1,5 +1,6 @@
 (ns bluecollar.foreman-test
   (:use clojure.test
+        bluecollar.lifecycle
         bluecollar.test-helper)
   (:require [bluecollar.foreman :as foreman]
             [bluecollar.job-plans :as plan]
@@ -12,31 +13,36 @@
 (use-fixtures :each (fn [f]
   (redis-setup)
   (reset! bluecollar.fake-worker/perform-called false)
+  (reset! bluecollar.fake-worker/fake-worker-failures 0)
   (f)))
 
 (deftest foreman-start-stop-workers-test
   (testing "all of the workers can start and stop"
-    (do
-      (foreman/start-workers number-of-workers)
-      (is (= (foreman/worker-count) number-of-workers))
-      (foreman/stop-workers))
-    (Thread/sleep 1000)
-    (is (= (foreman/worker-count) 0))
+    ; new foreman
+    (let [a-foreman (foreman/new-foreman number-of-workers)]
+      (startup a-foreman)
+      (is (= number-of-workers (foreman/worker-count a-foreman)))
+      (is (= number-of-workers (foreman/scheduled-worker-count a-foreman)))
+      (shutdown a-foreman)
+      (Thread/sleep 1000)
+      (is (= 0 (foreman/worker-count a-foreman)))
+      (is (= 0 (foreman/scheduled-worker-count a-foreman))))
     ))
 
 (deftest foreman-dispatch-worker-test
-  
   (testing "dispatches a worker based on a job plan"
     (let [workers {:fake-worker (struct union-rep/worker-definition
                                         bluecollar.fake-worker/perform
                                         testing-queue-name false)}
           _ (union-rep/register-workers workers)
+          a-foreman (foreman/new-foreman number-of-workers)
           a-job-plan (plan/new-job-plan :fake-worker [1 2])]
       (do
-        (foreman/start-workers number-of-workers)
-        (foreman/dispatch-worker a-job-plan)
+        (startup a-foreman)
+        (foreman/dispatch-worker a-foreman a-job-plan)
         (Thread/sleep 500)
-        (is (true? (deref bluecollar.fake-worker/perform-called))))
+        (is (true? (deref bluecollar.fake-worker/perform-called)))
+        (shutdown a-foreman))
       )))
 
 (deftest foreman-dispatch-scheduled-worker-test
@@ -45,11 +51,13 @@
                                         bluecollar.fake-worker/perform
                                         testing-queue-name false)}
           _ (union-rep/register-workers workers)
+          a-foreman (foreman/new-foreman number-of-workers)
           a-job-plan (plan/new-job-plan :fake-worker [1 2] (str (time/plus (time/now) (time/secs 2))))]
       (do
-        (foreman/start-workers number-of-workers)
-        (foreman/dispatch-scheduled-worker a-job-plan)
+        (startup a-foreman)
+        (foreman/dispatch-scheduled-worker a-foreman a-job-plan)
         (Thread/sleep 3000)
-        (is (true? (deref bluecollar.fake-worker/perform-called))))
+        (is (true? (deref bluecollar.fake-worker/perform-called)))
+        (shutdown a-foreman))
       )))
 
