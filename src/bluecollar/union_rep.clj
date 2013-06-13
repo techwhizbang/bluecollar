@@ -2,6 +2,11 @@
 
 (defstruct worker-definition :fn :queue :retry)
 
+(defrecord WorkerDefinition [func queue retry])
+
+(defn new-worker-definition [func queue retry]
+  (->WorkerDefinition func queue retry))
+
 (def registered-workers
   "worker-definitions are stored here"
   (atom {}))
