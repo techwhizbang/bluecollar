@@ -1,9 +1,6 @@
 # beta release checklist
 
 * Indicate server hostname a job plan is being executed.
-* A macro to allow setup and startup of multiple superintendents
-* A macro to shutdown all superintendents
-* Shutdown a specific superintendent
 * Add an optional namespace to keys everything pushed to Redis
 * "bluecollar" startup w/ Leiningen as a daemon, look at lein-daemon
 * Reporting mechanism for when jobs fail.
