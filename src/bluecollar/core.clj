@@ -45,12 +45,14 @@
     [clojure.tools.logging :as logger]))
 
 (def job-sites (atom []))
+(def server-hostname (atom nil))
 
 (defn bluecollar-startup
   "Start up the bluecollar environment by passing it the specifications for both the
    queues and workers."
   [queue-specs worker-specs]
-  (logger/info "Bluecollar is starting...")
+  (reset! server-hostname (.getHostName (java.net.InetAddress/getLocalHost)))
+  (logger/info "Bluecollar is starting up on" @server-hostname "...")
   (doseq [[worker-name worker-defn] worker-specs]
     (union-rep/register-worker worker-name (struct union-rep/worker-definition
       (:fn worker-defn)
@@ -63,7 +65,8 @@
 (defn bluecollar-shutdown
   "Shut down the bluecollar environment"
   []
-  (logger/info "Bluecollar is shutting down...")
+  (logger/info "Bluecollar is shutting down on" @server-hostname "...")
+  (reset! server-hostname nil)
   (if-not (empty? @job-sites)
     (do
       (doseq [site @job-sites] (shutdown site))

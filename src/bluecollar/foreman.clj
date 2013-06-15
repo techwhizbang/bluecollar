@@ -17,7 +17,6 @@
   ; {:host "server.xyx.123" :queue "foo bar"}  
   (startup [this]
     (logger/info "Starting up foreman")
-    ; (reset! hostname (.getHostName (java.net.InetAddress/getLocalHost)))
     (let [thread-cnt (:worker-count this)
           pool (. Executors newFixedThreadPool thread-cnt)
           scheduled-pool (. Executors newScheduledThreadPool thread-cnt)]
