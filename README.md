@@ -1,5 +1,7 @@
 # bluecollar
 
+[![Build Status](https://travis-ci.org/techwhizbang/bluecollar.png)](https://travis-ci.org/techwhizbang/bluecollar)
+
 Bluecollar is a work in progress and is currently under construction. 
 Please stay tuned for its "beta" release.
 
