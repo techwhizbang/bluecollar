@@ -6,9 +6,6 @@
             [cheshire.core :as json]
             [clojure.tools.logging :as logger]))
 
-(def ^:private keep-everyone-working (atom true))
-
-; TODO remove worker-count from the args JobSite takes
 (defrecord JobSite [#^String site-name #^bluecollar.foreman.Foreman foreman continue-running])
 
 (extend-type JobSite
@@ -34,7 +31,6 @@
   (shutdown [this]
     (logger/info "Stopping JobSite: " (:site-name this))
     (reset! (:continue-running this) false)
-    ; (shutdown-agents)
     (shutdown (:foreman this))
     ))
 
