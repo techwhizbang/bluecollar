@@ -23,8 +23,6 @@
   (testing "can successfully startup and shutdown the bluecollar environment"
     (bluecollar-startup queue-specs worker-specs)
     (Thread/sleep 1000)
-    ; check the server-hostname is set
-    (is (not (nil? @server-hostname)))
     ; check that there are the correct number of JobSites
     (is (= (count (keys queue-specs)) (count @job-sites)))
     ; send some work that should be processed on successful startup
@@ -37,8 +35,6 @@
     ; shut it down
     (bluecollar-shutdown)
     (Thread/sleep 1000)
-    ; check the server-hostname is reset
-    (is (nil? @server-hostname))
     ; ensure the JobSites are empty
     (is (empty? @job-sites))
     ; send more work but it won't get processed
