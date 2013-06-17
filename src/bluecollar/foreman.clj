@@ -6,15 +6,11 @@
             [bluecollar.job-plans :as plan]
             [clojure.tools.logging :as logger]))
 
-(def ^:private hostname (atom nil))
-
-(defrecord Foreman [#^int worker-count fixed-pool scheduled-pool])
+(defrecord Foreman [#^int worker-count fixed-pool scheduled-pool server-hostname])
 
 (extend-type Foreman
   Lifecycle
 
-  ;TODO start workers and then push to Redis the # of available workers and what host and queue
-  ; {:host "server.xyx.123" :queue "foo bar"}  
   (startup [this]
     (logger/info "Starting up foreman")
     (let [thread-cnt (:worker-count this)
@@ -25,13 +21,12 @@
       (.prestartAllCoreThreads @(:fixed-pool this))
       (.prestartAllCoreThreads @(:scheduled-pool this))))
 
-  ;TODO stop workers and then delete from Redis the # of workers from this host and queue
   (shutdown [this]
     (logger/info "Shutting down foreman")
     (.shutdown @(:fixed-pool this))
     (.shutdown @(:scheduled-pool this))))
 
-(defn new-foreman [worker-count] (->Foreman worker-count (atom nil) (atom nil)))
+(defn new-foreman [worker-count] (->Foreman worker-count (atom nil) (atom nil) (.getHostName (java.net.InetAddress/getLocalHost))))
 
 (defn worker-count [#^bluecollar.foreman.Foreman a-foreman]
   "Returns the total number of workers."
@@ -58,9 +53,10 @@
 (defn dispatch-work [#^bluecollar.foreman.Foreman a-foreman #^bluecollar.job_plans.JobPlan job-plan]
   "Dispatch the appropriate worker based on the given job-plan."
   (logger/info "Dispatching a worker for JobPlan with UUID: " (:uuid job-plan))
-  (if (plan/schedulable? job-plan)
-    (dispatch-scheduled-worker a-foreman job-plan)
-    (dispatch-worker a-foreman job-plan)))
+  (let [job-plan (assoc job-plan :server (:server-hostname a-foreman))]
+    (if (plan/schedulable? job-plan)
+      (dispatch-scheduled-worker a-foreman job-plan)
+      (dispatch-worker a-foreman job-plan))))
 
 
 

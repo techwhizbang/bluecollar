@@ -30,7 +30,7 @@
           _ (Thread/sleep 3000) ; wait for the job plan to be completed
           _ (shutdown a-job-site)
           _ (Thread/sleep 2000) ; wait for shutdown to complete
-          in-processing-vals (redis/lrange (deref redis/processing-queue) 0 0)]
+          in-processing-vals (redis/lrange redis/processing-queue 0 0)]
       (is (true? (deref bluecollar.fake-worker/perform-called)))
       (is (empty? in-processing-vals))
       )))

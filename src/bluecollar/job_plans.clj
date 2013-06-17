@@ -15,7 +15,7 @@
   (before [_] "Add any 'global' functionality that will run exactly prior to every JobPlan's execution.")
   (after [_] "Add any 'global' functionality that will run exactly after to every JobPlan's execution."))
 
-(defrecord JobPlan [worker #^clojure.lang.PersistentVector args uuid scheduled-runtime]) 
+(defrecord JobPlan [worker #^clojure.lang.PersistentVector args uuid scheduled-runtime server])
 
 (extend-type JobPlan
   Schedulable
@@ -49,17 +49,24 @@
    The optional scheduled runtime must be specified in ISO8601 date/time string format (ie. 2013-05-25T23:40:15.011Z)." 
   ([worker args] (new-job-plan worker args nil))
   ([worker args scheduled-runtime] (new-job-plan worker args (generate-uuid) scheduled-runtime))
-  ([worker args uuid scheduled-runtime] (->JobPlan (keyword worker) args uuid scheduled-runtime)))
+  ([worker args uuid scheduled-runtime] (new-job-plan worker args uuid scheduled-runtime nil))
+  ([worker args uuid scheduled-runtime server] (->JobPlan (keyword worker) args uuid scheduled-runtime server)))
 
 (defn as-json [job-plan]
-  (if-let [scheduled-runtime (get job-plan :scheduled-runtime)]
-    (json/generate-string (assoc job-plan :scheduled-runtime (str scheduled-runtime)))
-    (json/generate-string job-plan)))
+  (let [job-plan-map {:worker (:worker job-plan)
+                      :args (:args job-plan)
+                      :uuid (:uuid job-plan)
+                      :scheduled-runtime (time-coerce/to-string (:scheduled-runtime job-plan))
+                      :server (:server job-plan)}]
+    (json/generate-string job-plan-map)))
 
 (defn from-json [plan-as-json]
   (let [parsed-map (json/parse-string plan-as-json)]
-    (new-job-plan (get parsed-map "worker") (get parsed-map "args") (get parsed-map "uuid") 
-                  (get parsed-map "scheduled-runtime"))
+    (new-job-plan (get parsed-map "worker") 
+                  (get parsed-map "args") 
+                  (get parsed-map "uuid") 
+                  (get parsed-map "scheduled-runtime")
+                  (get parsed-map "server"))
     ))
 
 (defn enqueue
@@ -77,8 +84,12 @@
       (throw (RuntimeException. (str worker-name " was not found in the worker registry.")))
       ))))
 
+; intentionally removing the server attribute since it is a JIT addition during work
+; dispatch and is not part of the original JobPlan at the time of enqueueing;
+; in order to successfully "pop" it from the processing queue it must look like the original JobPlan. 
 (defn on-success [job-plan]
-  (redis/processing-pop (as-json job-plan)))
+  (let [job-plan-sans-server (dissoc job-plan :server "server")]
+    (redis/processing-pop (as-json job-plan-sans-server))))
 
 (defn below-failure-threshold? [uuid]
   (< (redis/failure-count uuid) @maximum-failures))
@@ -122,6 +133,7 @@
     (fn [] 
       (try
         (logger/info "executing a JobPlan with UUID:" uuid "for worker" worker-name)
+        ; TODO push-to-busy-workers
         (if (extends? Hookable JobPlan)
           (do  
             (before job-plan)
@@ -131,6 +143,8 @@
         (on-success job-plan)
       (catch Exception e
         (logger/error e "there was an error when executing JobPlan with UUID:" uuid "for worker" worker-name)
-        (on-failure job-plan)
+        (on-failure job-plan))
+      (finally 
+        ; TODO remove from busy-workers
         )))
     ))

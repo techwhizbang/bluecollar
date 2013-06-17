@@ -16,6 +16,11 @@
   (reset! bluecollar.fake-worker/fake-worker-failures 0)
   (f)))
 
+(deftest new-foreman-test
+  (testing "takes the number of workers as an argument"
+    (is (not (nil? (foreman/new-foreman 5))))
+    ))
+
 (deftest foreman-start-stop-workers-test
   (testing "all of the workers can start and stop"
     ; new foreman
@@ -30,6 +35,10 @@
     ))
 
 (deftest foreman-dispatch-worker-test
+  (testing "assigns the server hostname to the job plan during dispatch"
+    ;TODO fill this is
+    )
+
   (testing "dispatches a worker based on a job plan"
     (let [workers {:fake-worker (struct union-rep/worker-definition
                                         bluecollar.fake-worker/perform
