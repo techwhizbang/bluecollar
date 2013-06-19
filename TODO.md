@@ -1,6 +1,7 @@
 # beta release checklist
 
 * Indicate server hostname a job plan is being executed.
+* Capture the average run time statistics for each worker
 * Add an optional namespace to keys everything pushed to Redis
 * "bluecollar" startup w/ Leiningen as a daemon, look at lein-daemon
 * Reporting mechanism for when jobs fail.
