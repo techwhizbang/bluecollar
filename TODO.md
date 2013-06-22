@@ -1,21 +1,14 @@
 # beta release checklist
-* Give an option during startup to override the default "bluecollar" namespace.
-* Re-coverability - if the process terminates ungracefully while processing jobs 
+* Give an option during startup to customize the default "bluecollar" namespace.
+* Re-coverability - if bluecollar terminates ungracefully while processing jobs 
   and leaves jobs in the "processing" queue; recover the orphaned jobs and retry them.
-    * Interesting problem to solve if there are workers processing the same queue
-      that are distributed across multiple servers...who's in charge in determining what needs recovery?
+    * Each instance of bluecollar should get its own processing queue in Redis.
+    * Interesting problem to solve when distributed, who's in charge of determining what needs recovery?
     * To be truly distributed it shouldn't be limited to just the process or server that terminated ungracefully
       to recover
-    * Maybe initially it is said that processing duplicate queues across multiple processes or servers
-      is not recommended until a more robust solution
-    * Maybe it is time based, if left in processing for more than an hour and if a new
-      bluecollar instance is booted up or is restarted first check the processing queue
-      for stale jobs and retry them...this however is problematic for long running jobs!
-    * Maybe as part of the JobPlan JSON pushed into the processing queue it begins to include the
-      server hostname it is/was being processed on, and if left in the processing queue for over an hour, 
-      a bluecollar instance known as an "arbiter" can ping that bluecollar instance based on the server hostname 
-      on a particular port to see if it is still alive... If it's still alive, and it responds assume the best,
-      if it doesn't move it from the processing and place it back into the named queue it came from.
+    * Maybe initially it is said that the bluecollar instance that terminated ungracefully is in charge or recovering
+      its own jobs.
+    * On boot up it should check its own processing queue for leftover work.
 * Calculate the average run time statistics for each worker
 * Calculate the entire total of successful jobs processed.
 * Calculate the entire total of failed jobs processed.
@@ -41,3 +34,11 @@
       tracked.
 * Configurable to send emails through the servers local sendmail
     * daily email journal
+* Distributed re-coverability - if the process terminates ungracefully while processing jobs 
+  and leaves jobs in the "processing" queue; recover the orphaned jobs and retry them.
+    * Need an arbiter...a basic process in charge of making decisions on behalf of a cluster
+      of distributed bluecollar instances.
+    * The arbiter gets a list of bluecollar instances on what servers and what ports.
+    * The arbiter pings the bluecollar instances occassionally on those ports to ensure they're still alive.
+    * If an instance becomes unresponsive, then check the processing queue assigned to that instance and see if
+      any jobs are left there, if they are then remove from processing and add back into the named queue.
