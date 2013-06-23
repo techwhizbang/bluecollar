@@ -1,12 +1,13 @@
 (ns bluecollar.core
-  "The core namespace for the bluecollar library.
+  "The core namespace for the bluecollar library. 
+  Use bluecollar.core to start and stop the bluecollar environment.
 
-  In order to start the bluecollar environment, create two hash maps containing
-  the queue specifications and the other containing the worker specifications.
+  In order to start the bluecollar environment first create two hash maps. The hash maps will contain
+  the queue specifications and the worker specifications.
 
-  The queue specifications is a hash map.
-  Each keyword will be used as a queue name.
-  The value of each keyword will determine how large thread pool representing that queue should be.
+  As stated above, the queue specifications is a hash map.
+  Each keyword in the hash map will be used as a queue name.
+  Each value will determine the size of the thread pool backing the respective queue.
   It can contain any number of arbitrarily named queues.
 
   In this example there are 3 queue specifications:
@@ -14,8 +15,8 @@
   => {:high-importance 10 :medium-importance 5 :catch-all 5}
 
   The worker specifications is also a hash map.
-  Each keyword will represent a worker and how it is referenced to send it jobs.
-  The value for each worker specification is a hash map containing that must contain 3 main things:
+  Each keyword in the hash map will represent a unique worker (later this is how the worker can be referenced to enqueue jobs).
+  The value for each worker specification is a hash map containing 3 required things:
     1.) The queue it should be placed on in order to be processed.
     2.) The namespace and function it should execute when being processed.
     3.) The ability to retry if the job given to the worker results in an exception.
@@ -41,8 +42,8 @@
   (:use bluecollar.lifecycle
     bluecollar.properties)
   (:require [bluecollar.job-sites :as job-site]
-    [bluecollar.union-rep :as union-rep]
-    [clojure.tools.logging :as logger]))
+            [bluecollar.union-rep :as union-rep]
+            [clojure.tools.logging :as logger]))
 
 (def job-sites (atom []))
 (def server-hostname (atom nil))
