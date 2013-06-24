@@ -1,5 +1,6 @@
 (ns bluecollar.core-test
   (:use clojure.test
+        bluecollar.client
         bluecollar.core
         bluecollar.test-helper)
   (:require [bluecollar.fake-worker :as fake-worker]
@@ -26,8 +27,8 @@
     ; check that there are the correct number of JobSites
     (is (= (count (keys queue-specs)) (count @job-sites)))
     ; send some work that should be processed on successful startup
-    (plan/enqueue :worker-one [])
-    (plan/enqueue :worker-two [])
+    (async-job-for :worker-one [])
+    (async-job-for :worker-two [])
     (Thread/sleep 1000)
     ; check that the work was processed
     (is (= 1 @fake-worker/cnt-me))
@@ -38,8 +39,8 @@
     ; ensure the JobSites are empty
     (is (empty? @job-sites))
     ; send more work but it won't get processed
-    (plan/enqueue :worker-one [])
-    (plan/enqueue :worker-two [])
+    (async-job-for :worker-one [])
+    (async-job-for :worker-two [])
     ; ensure that no more work was processed
     (is (= 1 @fake-worker/cnt-me))
     (is (= 1 @fake-worker/fake-worker-failures))

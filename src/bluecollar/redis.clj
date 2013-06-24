@@ -77,11 +77,19 @@
   ([value] (processing-pop value @pool-and-settings))
   ([value redis-conn] (with-redis-conn redis-conn (redis-client/lrem processing-queue -1 value))))
 
-(defn push-busy-worker [job-plan])
-  ; TODO add busy worker based on job plan JSON
-  ; (push busy-workers-queue job-plan-json @pool-and-settings))
+; (defn push-busy-worker
+;   "Pushes a job-plan with the server hostname where it is being processed attached to it. 
+;    The difference between the busy workers queue and processing queue is subtle. 
+;    The busy worker queue contains the JobPlan JSON with the server hostname 
+;    whereas the processing queue has the JobPlan JSON without the server hostname."
+;   ([job-plan] (push-busy-worker job-plan @pool-and-settings))
+;   ([job-plan redis-conn] (with-redis-conn redis-conn (redis-client/lpush busy-workers-queue ()))))
+;   ; TODO add busy worker based on job plan JSON
+;   ; (push busy-workers-queue job-plan-json @pool-and-settings))
 
-(defn remove-busy-worker [job-plan])
+; (defn pop-busy-worker 
+;   ([job-plan])
+;   ([job-plan redis-conn]))
   ; TODO remove worker based on job plan JSON
   ; (with-redis-conn @pool-and-settings (redis-client/lrem busy-workers-queue -1 job-plan-json)))
 

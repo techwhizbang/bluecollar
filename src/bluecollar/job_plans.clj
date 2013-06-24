@@ -69,21 +69,6 @@
                   (get parsed-map "server"))
     ))
 
-(defn enqueue
-  ([worker-name args] 
-    (enqueue (new-job-plan worker-name args)))
-  ([worker-name args scheduled-runtime]
-    (enqueue (new-job-plan worker-name args scheduled-runtime)))
-  ([job-plan]
-    (let [worker-name (get job-plan :worker)
-          registered-worker (union-rep/find-worker worker-name)]
-    (if-not (nil? registered-worker)
-      (let [queue (get registered-worker :queue)]
-        (logger/info "enqueuing the job plan" (as-json job-plan) "to" queue "for worker" worker-name)
-        (redis/push queue (as-json job-plan)))
-      (throw (RuntimeException. (str worker-name " was not found in the worker registry.")))
-      ))))
-
 ; intentionally removing the server attribute since it is a JIT addition during work
 ; dispatch and is not part of the original JobPlan at the time of enqueueing;
 ; in order to successfully "pop" it from the processing queue it must look like the original JobPlan. 
@@ -103,13 +88,31 @@
 
 (defn retry-delay [failures] (Math/pow @delay-base failures))
 
+(defn async-job-plan
+  ^{:doc "Push a JobPlan to a registered worker's queue to process asynchronously.
+          If it successfully pushes the JobPlan it will return the UUID associated
+          with the JobPlan."}
+  ([worker-name #^clojure.lang.PersistentVector args]
+    (async-job-plan (new-job-plan worker-name args)))
+  ([worker-name args scheduled-runtime]
+    (async-job-plan (new-job-plan worker-name args scheduled-runtime)))
+  ([job-plan]
+    (let [worker-name (get job-plan :worker)
+          registered-worker (union-rep/find-worker worker-name)]
+    (if-not (nil? registered-worker)
+      (let [queue (get registered-worker :queue)]
+        (redis/push queue (as-json job-plan))
+        (:uuid job-plan))
+      (throw (RuntimeException. (str worker-name " was not found in the worker registry.")))
+      ))))
+
 (defn- retry [job-plan]
   (let [uuid (:uuid job-plan)
         failures (redis/failure-count uuid)
         scheduled-runtime (str (time/plus (time/now) (time/secs (retry-delay failures))))
         scheduled-job-plan (assoc job-plan :scheduled-runtime scheduled-runtime)]
     (logger/info "retrying the JobPlan with UUID" uuid "at" scheduled-runtime)
-    (enqueue scheduled-job-plan)))
+    (async-job-plan scheduled-job-plan)))
 
 (defn on-failure 
   "Always remove the failed job from the processing queue.

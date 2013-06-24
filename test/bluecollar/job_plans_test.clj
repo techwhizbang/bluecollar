@@ -84,26 +84,6 @@
       ))
   )
 
-(deftest enqueue-test
-  (testing "successfully enqueues a job plan for a registered worker"
-    (let [workers {:hard-worker (struct union-rep/worker-definition 
-                                        bluecollar.fake-worker/perform
-                                        "crunch-numbers"
-                                        false)}
-          _ (union-rep/register-workers workers)
-          _ (plan/enqueue :hard-worker [1 3])
-          job-plan (plan/from-json (redis/pop "crunch-numbers"))]
-      (is (= :hard-worker (get job-plan :worker)))
-      (is (= [1 3] (get job-plan :args)))
-      (is (not (nil? (re-find uuid-regex (get job-plan :uuid)))))
-      ))
-  
-  (testing "throws a RuntimeException when an unregistered worker is encountered"
-    (let [_ (reset! bluecollar.union-rep/registered-workers {})]
-      (is (thrown-with-msg? RuntimeException #":hard-worker was not found in the worker registry." (plan/enqueue :hard-worker [1 3])))
-      )
-    ))
-
 (deftest on-success-test
   (testing "successfully removes a job plan from the processing queue"
     (let [processing-queue redis/processing-queue

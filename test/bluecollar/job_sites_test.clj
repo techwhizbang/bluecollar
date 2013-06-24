@@ -1,6 +1,7 @@
 (ns bluecollar.job-sites-test
   (:use clojure.test
     bluecollar.lifecycle
+    bluecollar.client
     bluecollar.test-helper)
   (:require [bluecollar.redis :as redis]
             [bluecollar.fake-worker]
@@ -26,7 +27,7 @@
           a-job-site (job-site/new-job-site testing-queue-name 5)
           _ (startup a-job-site)
           _ (Thread/sleep 1000)
-          _ (plan/enqueue :hard-worker [3 2])
+          _ (async-job-for :hard-worker [3 2])
           _ (Thread/sleep 3000) ; wait for the job plan to be completed
           _ (shutdown a-job-site)
           _ (Thread/sleep 2000) ; wait for shutdown to complete
@@ -46,7 +47,7 @@
           a-job-site (job-site/new-job-site testing-queue-name 5)
           _ (startup a-job-site)
           _ (Thread/sleep 1000) 
-          _ (plan/enqueue :failing-worker [])
+          _ (async-job-for :failing-worker [])
           _ (Thread/sleep 3000) ; wait for all of the job plans to complete
           _ (shutdown a-job-site)
           _ (Thread/sleep 2000)] ; wait for shutdown to complete
@@ -70,8 +71,8 @@
           _ (startup job-site-1)
           _ (startup job-site-2)
           _ (Thread/sleep 1000) 
-          _ (plan/enqueue :worker-one [])
-          _ (plan/enqueue :worker-two [])
+          _ (async-job-for :worker-one [])
+          _ (async-job-for :worker-two [])
           _ (Thread/sleep 3000) ; wait for all of the job plans to complete
           _ (shutdown job-site-1)
           _ (shutdown job-site-2)
