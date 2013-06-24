@@ -31,8 +31,21 @@
   => (use 'bluecollar.core)
   => (def queue-specs {:high-importance 10 :medium-importance 5 :catch-all 5})
   => (def worker-specs {:worker-one {:fn clojure.core/+, :queue :high-importance, :retry true}
-                         :worker-two {:fn nick.zalabak/blog, :queue :catch-all, :retry false}})
+                        :worker-two {:fn nick.zalabak/blog, :queue :catch-all, :retry false}})
   => (bluecollar-startup queue-specs worker-specs)
+
+  Optionally, bluecollar-startup accepts a third hash-map. The third hash-map contains connection
+  details for Redis. Most likely you aren't running Redis on the same server you're running this
+  application. In that scenario you'll need to provide the details on the hostname, port, db,
+  timeout, and namespace. Namespace is purely a naming convention prefix associated with all of the
+  data structures stored in Redis.
+  Here is an example using an alternative hostname, port, db, timeout, and namespace:
+
+  => (def redis-settings {:redis-namespace \"whitecollar\",
+                          :redis-hostname \"redis-master.dc1.com\",
+                          :redis-port 1234,
+                          :redis-db 6,
+                          :redis-timeout 6000})
 
   In order to safely shut down bluecollar:
 
@@ -40,8 +53,9 @@
 
   "
   (:use bluecollar.lifecycle
-    bluecollar.properties)
+        bluecollar.properties)
   (:require [bluecollar.job-sites :as job-site]
+            [bluecollar.redis :as redis]
             [bluecollar.union-rep :as union-rep]
             [clojure.tools.logging :as logger]))
 
@@ -50,16 +64,29 @@
 (defn bluecollar-startup
   "Start up the bluecollar environment by passing it the specifications for both the
    queues and workers."
-  [queue-specs worker-specs]
-  (logger/info "Bluecollar is starting up...")
-  (doseq [[worker-name worker-defn] worker-specs]
-    (union-rep/register-worker worker-name (struct union-rep/worker-definition
-      (:fn worker-defn)
-      (:queue worker-defn)
-      (:retry worker-defn))))
-  (doseq [[queue-name pool-size] queue-specs]
-    (swap! job-sites conj (job-site/new-job-site queue-name pool-size)))
-  (doseq [site @job-sites] (startup site)))
+  ([queue-specs worker-specs] (bluecollar-startup queue-specs worker-specs {:redis-hostname "127.0.0.1",
+                                                                            :redis-port 6379,
+                                                                            :redis-db 0,
+                                                                            :redis-timeout 5000}))
+  ([queue-specs worker-specs {redis-namespace :redis-namespace
+                              redis-hostname :redis-hostname
+                              redis-port :redis-port
+                              redis-db :redis-db
+                              redis-timeout :timeout}]
+    (logger/info "Bluecollar is starting up...")
+    (reset! redis/redis-namespace (or redis-namespace "bluecollar"))
+    (redis/startup {:host (or redis-hostname "127.0.0.1")
+                    :port (or redis-port 6379)
+                    :db (or redis-db 0)
+                    :timeout (or redis-timeout 5000)})
+    (doseq [[worker-name worker-defn] worker-specs]
+      (union-rep/register-worker worker-name (struct union-rep/worker-definition
+        (:fn worker-defn)
+        (:queue worker-defn)
+        (:retry worker-defn))))
+    (doseq [[queue-name pool-size] queue-specs]
+      (swap! job-sites conj (job-site/new-job-site queue-name pool-size)))
+    (doseq [site @job-sites] (startup site))))
 
 (defn bluecollar-shutdown
   "Shut down the bluecollar environment"

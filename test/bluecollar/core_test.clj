@@ -12,10 +12,9 @@
                    :worker-two {:fn bluecollar.fake-worker/explode, :queue :low-importance, :retry true}} )
 
 (use-fixtures :each (fn [f]
-  (redis/startup redis-test-settings)
-  (redis/flushdb)
   (reset! bluecollar.fake-worker/fake-worker-failures 0)
   (reset! bluecollar.fake-worker/cnt-me 0)
+  (redis/flushdb)
   (f)
   (reset! bluecollar.fake-worker/fake-worker-failures 0)
   (reset! bluecollar.fake-worker/cnt-me 0)))

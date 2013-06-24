@@ -6,7 +6,7 @@
 
 (def ^:private pool-and-settings (atom nil))
 
-(def redis-namespace 
+(def redis-namespace
   ^{:doc "The prefix to all data structures and messages passed through Redis.
           Feel free to change the name of this value if you see fit."}
   (atom "bluecollar"))
