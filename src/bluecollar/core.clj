@@ -46,7 +46,6 @@
             [clojure.tools.logging :as logger]))
 
 (def job-sites (atom []))
-(def server-hostname (atom nil))
 
 (defn bluecollar-startup
   "Start up the bluecollar environment by passing it the specifications for both the
@@ -66,7 +65,6 @@
   "Shut down the bluecollar environment"
   []
   (logger/info "Bluecollar is shutting down...")
-  (reset! server-hostname nil)
   (if-not (empty? @job-sites)
     (do
       (doseq [site @job-sites] (shutdown site))
