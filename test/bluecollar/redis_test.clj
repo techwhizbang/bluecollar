@@ -59,7 +59,7 @@
   (testing "places the pop valued into the processing queue"
     (let [_ (redis/push "deep dish" "pizza")
           _ (redis/pop "deep dish")
-          values (redis/lrange redis/processing-queue 0 0)]
+          values (redis/lrange (redis/processing-queue) 0 0)]
       (is (= (first values) "pizza")))
     )
 
@@ -81,7 +81,7 @@
           _ (redis/push "caramel" original-value)
           popped-value (redis/blocking-pop "caramel")
           _ (redis/processing-pop original-value)
-          remaining-vals (redis/lrange redis/processing-queue 0 0)]
+          remaining-vals (redis/lrange (redis/processing-queue) 0 0)]
       (is (= popped-value "latte"))
       (is (empty? remaining-vals))
       )))
