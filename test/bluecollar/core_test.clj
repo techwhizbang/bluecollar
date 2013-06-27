@@ -19,6 +19,9 @@
   (reset! bluecollar.fake-worker/fake-worker-failures 0)
   (reset! bluecollar.fake-worker/cnt-me 0)))
 
+(deftest processing-queue-recovery-test
+  (testing "re-enqueues jobs left in the processing queue"))
+
 (deftest bluecollar-setup-teardown-test
   (testing "can successfully setup and teardown the bluecollar environment"
     (bluecollar-setup queue-specs worker-specs)

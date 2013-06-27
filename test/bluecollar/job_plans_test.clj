@@ -86,7 +86,7 @@
 
 (deftest on-success-test
   (testing "successfully removes a job plan from the processing queue"
-    (let [processing-queue (redis/processing-queue)
+    (let [processing-queue @redis/processing-queue
           job-plan (plan/new-job-plan :hard-worker [1 3])
           _ (redis/push processing-queue (plan/as-json job-plan))
           current-vals (redis/lrange processing-queue 0 0)
@@ -182,7 +182,7 @@
         (is (= 0 (redis/failure-count (:uuid job-plan)))))))
 
   (testing "always removes the job plan from the processing queue"
-    (let [processing-queue (redis/processing-queue)
+    (let [processing-queue @redis/processing-queue
           job-plan (plan/new-job-plan :hard-worker [1 3])
           _ (redis/push processing-queue (plan/as-json job-plan))
           current-vals (redis/lrange processing-queue 0 0)

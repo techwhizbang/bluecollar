@@ -6,22 +6,21 @@
 
 (def ^:private pool-and-settings (atom nil))
 
-(def redis-namespace
-  ^{:doc "The prefix to all data structures and messages passed through Redis.
+(def redis-key-prefix
+  ^{:doc "The prefix to all keys, lists, and data structures that pass through Redis.
           Feel free to change the name of this value if you see fit."}
   (atom "bluecollar"))
 
-(defn processing-queue 
-  ^{:doc "The name of the queue that items are pushed to until they are successfully processed."}
-  [] (str @redis-namespace ":processing-queue"))
+(defn setup-key-prefix [prefix] (reset! redis-key-prefix (or prefix "bluecollar")))
 
-(defn busy-workers-queue
-  ^{:doc "The name of the queue where busy workers and their details are placed."}
-  [] (str @redis-namespace ":busy-workers"))
+(def processing-queue (atom (str @redis-key-prefix ":processing-queue")))
+
+(defn setup-processing-queue [instance-name]
+  (reset! processing-queue (str @redis-key-prefix ":processing-queue:" (or instance-name "default"))))
 
 (defn failed-retryable-counter 
   ^{:doc "The name of the hash where the count of failed retryable jobs is stored."}
-  [] (str @redis-namespace ":failed-retryable-counter"))
+  [] (str @redis-key-prefix ":failed-retryable-counter"))
 
 (defmacro ^{:private true} with-redis-conn [redis-connection & body]
   `(redis-client/with-conn (:pool ~redis-connection) (:settings ~redis-connection) ~@body))
@@ -77,36 +76,25 @@
 (defn processing-pop
   "Removes the last occurrence of the given value from the processing queue."
   ([value] (processing-pop value @pool-and-settings))
-  ([value redis-conn] (with-redis-conn redis-conn (redis-client/lrem (processing-queue) -1 value))))
-
-; (defn push-busy-worker
-;   "Pushes a job-plan with the server hostname where it is being processed attached to it. 
-;    The difference between the busy workers queue and processing queue is subtle. 
-;    The busy worker queue contains the JobPlan JSON with the server hostname 
-;    whereas the processing queue has the JobPlan JSON without the server hostname."
-;   ([job-plan] (push-busy-worker job-plan @pool-and-settings))
-;   ([job-plan redis-conn] (with-redis-conn redis-conn (redis-client/lpush busy-workers-queue ()))))
-;   ; TODO add busy worker based on job plan JSON
-;   ; (push busy-workers-queue job-plan-json @pool-and-settings))
-
-; (defn pop-busy-worker 
-;   ([job-plan])
-;   ([job-plan redis-conn]))
-  ; TODO remove worker based on job plan JSON
-  ; (with-redis-conn @pool-and-settings (redis-client/lrem busy-workers-queue -1 job-plan-json)))
+  ([value redis-conn] (with-redis-conn redis-conn (redis-client/lrem @processing-queue -1 value))))
 
 (defn push
-  "Push a value into the named queue."
+  "Push a value to the head of the named queue."
   ([queue-name value] (push queue-name value @pool-and-settings))
   ([queue-name value redis-conn] (with-redis-conn redis-conn (redis-client/lpush queue-name value))))
+
+(defn rpush
+  "Push a value to the tail of the queue."
+  ([queue-name value] (rpush queue-name value @pool-and-settings))
+  ([queue-name value redis-conn] (with-redis-conn redis-conn (redis-client/rpush queue-name value))))
 
 (defn pop
   "Pops a value from the queue and places the value into the processing queue."
   ([queue-name] (pop queue-name @pool-and-settings))
-  ([queue-name redis-conn] (with-redis-conn redis-conn (redis-client/rpoplpush queue-name (processing-queue)))))
+  ([queue-name redis-conn] (with-redis-conn redis-conn (redis-client/rpoplpush queue-name @processing-queue))))
 
 (defn blocking-pop
   "Behaves identically to consume but will wait for timeout or until something is pushed to the queue."
   ([queue-name] (blocking-pop queue-name 2))
   ([queue-name timeout] (blocking-pop queue-name timeout @pool-and-settings))
-  ([queue-name timeout redis-conn] (with-redis-conn redis-conn (redis-client/brpoplpush queue-name (processing-queue) timeout))))
+  ([queue-name timeout redis-conn] (with-redis-conn redis-conn (redis-client/brpoplpush queue-name @processing-queue timeout))))

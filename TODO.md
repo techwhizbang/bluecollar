@@ -1,8 +1,5 @@
 # beta release checklist
-* Give an option during startup to customize the default "bluecollar" namespace.
-* Need to define a client setup that establishes a Redis connection pointing to the correct
-  namespace with the same worker definitions as core.
-* Re-coverability - if bluecollar terminates ungracefully while processing jobs 
+* (IN PROGRESS) Re-coverability - if bluecollar terminates ungracefully while processing jobs 
   and leaves jobs in the "processing" queue; recover the orphaned jobs and retry them.
     * Each instance of bluecollar should get its own processing queue in Redis.
     * Interesting problem to solve when distributed, who's in charge of determining what needs recovery?
@@ -12,7 +9,7 @@
 * Calculate the average run time statistics for each worker
 * Calculate the entire total of successful jobs processed.
 * Calculate the entire total of failed jobs processed.
-* Indicate server hostname a job plan is being executed. (in progress)
+* Indicate server hostname a job plan is being executed.
 * Detailed usage and how-to in "README.md"
     * "bluecollar" startup instructions w/ Leiningen as a daemon, look at lein-daemon
     * include a canonical example application using bluecollar

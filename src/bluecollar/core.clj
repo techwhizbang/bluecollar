@@ -61,6 +61,8 @@
 
 (def job-sites (atom []))
 
+(defn processing-queue-recovery [])
+
 (defn bluecollar-setup
   "Setup and start bluecollar by passing it the specifications for both the
    queues and workers."
@@ -68,13 +70,15 @@
                                                                           :redis-port 6379,
                                                                           :redis-db 0,
                                                                           :redis-timeout 5000}))
-  ([queue-specs worker-specs {redis-namespace :redis-namespace
+  ([queue-specs worker-specs {redis-key-prefix :redis-key-prefix
                               redis-hostname :redis-hostname
                               redis-port :redis-port
                               redis-db :redis-db
-                              redis-timeout :timeout}]
+                              redis-timeout :timeout
+                              instance-name :instance-name}]
     (logger/info "Bluecollar setup is beginning...")
-    (reset! redis/redis-namespace (or redis-namespace "bluecollar"))
+    (redis/setup-key-prefix redis-key-prefix)
+    (redis/setup-processing-queue instance-name)
     (redis/startup {:host (or redis-hostname "127.0.0.1")
                     :port (or redis-port 6379)
                     :db (or redis-db 0)
@@ -84,6 +88,7 @@
         (:fn worker-defn)
         (:queue worker-defn)
         (:retry worker-defn))))
+    (processing-queue-recovery)
     (doseq [[queue-name pool-size] queue-specs]
       (swap! job-sites conj (job-site/new-job-site queue-name pool-size)))
     (doseq [site @job-sites] (startup site))))

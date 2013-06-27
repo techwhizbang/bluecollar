@@ -42,13 +42,13 @@
                                                          :redis-port 6379,
                                                          :redis-db 0,
                                                          :redis-timeout 5000}))
-  ([worker-specs {redis-namespace :redis-namespace
+  ([worker-specs {redis-key-prefix :redis-key-prefix
                   redis-hostname :redis-hostname
                   redis-port :redis-port
                   redis-db :redis-db
                   redis-timeout :timeout}]
     (logger/info "Bluecollar client is starting up...")
-    (reset! redis/redis-namespace (or redis-namespace "bluecollar"))
+    (redis/setup-key-prefix redis-key-prefix)
     (redis/startup {:host (or redis-hostname "127.0.0.1")
                     :port (or redis-port 6379)
                     :db (or redis-db 0)
@@ -62,7 +62,7 @@
 (defn bluecollar-client-teardown 
   ^{:doc "Teardown bluecollar for a client application"}
   [] 
-  (reset! redis/redis-namespace nil)
+  (reset! redis/redis-key-prefix nil)
   (redis/shutdown)
   (reset! union-rep/registered-workers {}))
 

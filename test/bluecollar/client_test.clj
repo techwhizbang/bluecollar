@@ -27,13 +27,13 @@
     (is (= "PONG" (redis/ping))))
 
   (testing "sets an alternative redis-namespace"
-    (is (= "fleur-de-sel" @redis/redis-namespace))))
+    (is (= "fleur-de-sel" @redis/redis-key-prefix))))
 
 (deftest bluecollar-client-teardown-test
   (testing "teardown works properly"
     (bluecollar-client-teardown)
     (is (empty? @union-rep/registered-workers))
-    (is (nil? @redis/redis-namespace))))
+    (is (nil? @redis/redis-key-prefix))))
 
 (deftest async-job-for-test
   (testing "successfully sends a job for a registered worker to process"

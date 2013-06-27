@@ -50,6 +50,18 @@
       (is (= (redis/push "pancakes" "syrup" redis-conn) 1))
       )))
 
+(deftest rpush-value-onto-queue
+  (testing "pushes a String value onto the tail of the named queue"
+    (is (= (redis/rpush "chicken" "tacos") 1))
+    (is (= "tacos" (redis/pop "chicken"))))
+
+  (testing "pushes a String value ahead of something already in the queue"
+    (let [_ (redis/push "chicken" "fajitas")
+          _ (redis/rpush "chicken" "pot pie")]
+      (is (= "pot pie" (redis/pop "chicken")))
+      (is (= "fajitas" (redis/pop "chicken")))
+      )))
+
 (deftest pop-value-from-queue
   (testing "consumes a value from a named queue"
     (let [_ (redis/push "mocha" "latte")
@@ -59,7 +71,7 @@
   (testing "places the pop valued into the processing queue"
     (let [_ (redis/push "deep dish" "pizza")
           _ (redis/pop "deep dish")
-          values (redis/lrange (redis/processing-queue) 0 0)]
+          values (redis/lrange @redis/processing-queue 0 0)]
       (is (= (first values) "pizza")))
     )
 
@@ -81,17 +93,23 @@
           _ (redis/push "caramel" original-value)
           popped-value (redis/blocking-pop "caramel")
           _ (redis/processing-pop original-value)
-          remaining-vals (redis/lrange (redis/processing-queue) 0 0)]
+          remaining-vals (redis/lrange @redis/processing-queue 0 0)]
       (is (= popped-value "latte"))
       (is (empty? remaining-vals))
       )))
 
-(deftest push-busy-worker-test
-  (testing "adds a busy worker to the busy workers queue"
-    ;TODO fill in 
-    ))
+(deftest setup-processing-queue-test
+  (testing "it resets the processing queue to include a custom name"
+    (redis/setup-processing-queue "server23")
+    (is (= "bluecollar:processing-queue:server23" @redis/processing-queue)))
+  (testing "uses the default if left unspecified"
+    (redis/setup-processing-queue nil)
+    (is (= "bluecollar:processing-queue:default" @redis/processing-queue))))
 
-(deftest remove-busy-worker-test
-  (testing "removes a busy worker from the busy workers queue"
-    ;TODO fill in 
-    ))
+(deftest setup-prefix-test
+  (testing "it resets the Redis prefix to include a custom name"
+    (redis/setup-key-prefix "whitecollar")
+    (is (= "whitecollar" @redis/redis-key-prefix)))
+  (testing "uses the default if left unspecified"
+    (redis/setup-key-prefix nil)
+    (is (= "bluecollar" @redis/redis-key-prefix))))
