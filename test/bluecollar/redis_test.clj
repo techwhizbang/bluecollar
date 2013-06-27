@@ -53,24 +53,24 @@
 (deftest rpush-value-onto-queue
   (testing "pushes a String value onto the tail of the named queue"
     (is (= (redis/rpush "chicken" "tacos") 1))
-    (is (= "tacos" (redis/pop "chicken"))))
+    (is (= "tacos" (redis/pop-to-processing "chicken"))))
 
   (testing "pushes a String value ahead of something already in the queue"
     (let [_ (redis/push "chicken" "fajitas")
           _ (redis/rpush "chicken" "pot pie")]
-      (is (= "pot pie" (redis/pop "chicken")))
-      (is (= "fajitas" (redis/pop "chicken")))
+      (is (= "pot pie" (redis/pop-to-processing "chicken")))
+      (is (= "fajitas" (redis/pop-to-processing "chicken")))
       )))
 
 (deftest pop-value-from-queue
   (testing "consumes a value from a named queue"
     (let [_ (redis/push "mocha" "latte")
-          value (redis/pop "mocha")]
+          value (redis/pop-to-processing "mocha")]
       (is (= value "latte"))))
 
   (testing "places the pop valued into the processing queue"
     (let [_ (redis/push "deep dish" "pizza")
-          _ (redis/pop "deep dish")
+          _ (redis/pop-to-processing "deep dish")
           values (redis/lrange @redis/processing-queue 0 0)]
       (is (= (first values) "pizza")))
     )
@@ -78,7 +78,7 @@
   (testing "uses a separate RedisConnection to pop a value"
     (let [redis-conn (redis/new-connection redis-test-settings)
           _ (redis/push "salt" "pepper" redis-conn)]
-      (is (= (redis/pop "salt" redis-conn) "pepper"))
+      (is (= (redis/pop-to-processing "salt" redis-conn) "pepper"))
       )))
 
 (deftest blocking-pop-value-from-queue

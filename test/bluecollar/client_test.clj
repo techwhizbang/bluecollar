@@ -14,7 +14,7 @@
 (use-fixtures :each (fn [f]
   (reset! bluecollar.fake-worker/perform-called false)
   (redis/shutdown)
-  (bluecollar-client-setup worker-specs {:redis-namespace "fleur-de-sel"})
+  (bluecollar-client-setup worker-specs {:redis-key-prefix "fleur-de-sel"})
   (redis/flushdb)
   (f)
   (bluecollar-client-teardown)))
@@ -37,14 +37,14 @@
 
 (deftest async-job-for-test
   (testing "successfully sends a job for a registered worker to process"
-    (is (nil? (redis/pop "crunch-numbers")))
+    (is (nil? (redis/pop-to-processing "crunch-numbers")))
     (is (not (nil? (re-find uuid-regex (async-job-for :hard-worker [1 3])))))
-    (is (not (nil? (redis/pop "crunch-numbers")))))
+    (is (not (nil? (redis/pop-to-processing "crunch-numbers")))))
 
   (testing "successfully sends a job with a scheduled runtime"
-    (is (nil? (redis/pop "crunch-numbers")))
+    (is (nil? (redis/pop-to-processing "crunch-numbers")))
     (is (not (nil? (re-find uuid-regex (async-job-for :hard-worker [1 3] (str (time/now)))))))
-    (is (not (nil? (redis/pop "crunch-numbers")))))
+    (is (not (nil? (redis/pop-to-processing "crunch-numbers")))))
   
   (testing "throws a RuntimeException when an unregistered worker is encountered"
     (let [_ (reset! bluecollar.union-rep/registered-workers {})]

@@ -88,9 +88,9 @@
   ([queue-name value] (rpush queue-name value @pool-and-settings))
   ([queue-name value redis-conn] (with-redis-conn redis-conn (redis-client/rpush queue-name value))))
 
-(defn pop
+(defn pop-to-processing
   "Pops a value from the queue and places the value into the processing queue."
-  ([queue-name] (pop queue-name @pool-and-settings))
+  ([queue-name] (pop-to-processing queue-name @pool-and-settings))
   ([queue-name redis-conn] (with-redis-conn redis-conn (redis-client/rpoplpush queue-name @processing-queue))))
 
 (defn blocking-pop

@@ -159,7 +159,7 @@
               job-plan-original (plan/new-job-plan :hard-worker [123])
               job-plan-to-retry (assoc job-plan-original :scheduled-runtime (str (time/plus now-ish (time/secs (deref plan/delay-base)))))  
               _ (plan/on-failure job-plan-original)]
-          (is (= job-plan-to-retry (plan/from-json (redis/pop "crunch-numbers"))))
+          (is (= job-plan-to-retry (plan/from-json (redis/pop-to-processing "crunch-numbers"))))
           (is (not (nil? (redis/processing-pop (plan/as-json job-plan-to-retry)))))
           ))))
 
@@ -171,7 +171,7 @@
           _ (union-rep/register-workers workers)
           job-plan (plan/new-job-plan :hard-worker [123])
           _ (plan/on-failure job-plan)]
-      (is (nil? (redis/pop "crunch-numbers")))
+      (is (nil? (redis/pop-to-processing "crunch-numbers")))
     ))
 
   (testing "removes the job plan from the failures hash if not retryable"
