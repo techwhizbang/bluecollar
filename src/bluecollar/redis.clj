@@ -73,9 +73,9 @@
   ([uuid] (failure-delete uuid @pool-and-settings))
   ([uuid redis-conn] (with-redis-conn redis-conn (redis-client/hdel (failed-retryable-counter) uuid))))
 
-(defn processing-pop
+(defn remove-from-processing
   "Removes the last occurrence of the given value from the processing queue."
-  ([value] (processing-pop value @pool-and-settings))
+  ([value] (remove-from-processing value @pool-and-settings))
   ([value redis-conn] (with-redis-conn redis-conn (redis-client/lrem @processing-queue -1 value))))
 
 (defn push

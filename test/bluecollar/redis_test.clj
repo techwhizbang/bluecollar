@@ -41,7 +41,7 @@
     (redis/failure-delete "mushroom frittata")
     (is (= 0 (redis/failure-count "mushroom frittata")))))
 
-(deftest push-value-onto-queue
+(deftest push-value-onto-queue-test
   (testing "pushes a String value onto a named queued"
     (is (= (redis/push "bacon" "eggs") 1)))
 
@@ -50,7 +50,7 @@
       (is (= (redis/push "pancakes" "syrup" redis-conn) 1))
       )))
 
-(deftest rpush-value-onto-queue
+(deftest rpush-value-onto-queue-test
   (testing "pushes a String value onto the tail of the named queue"
     (is (= (redis/rpush "chicken" "tacos") 1))
     (is (= "tacos" (redis/pop-to-processing "chicken"))))
@@ -62,7 +62,7 @@
       (is (= "fajitas" (redis/pop-to-processing "chicken")))
       )))
 
-(deftest pop-value-from-queue
+(deftest pop-value-from-queue-test
   (testing "consumes a value from a named queue"
     (let [_ (redis/push "mocha" "latte")
           value (redis/pop-to-processing "mocha")]
@@ -81,18 +81,18 @@
       (is (= (redis/pop-to-processing "salt" redis-conn) "pepper"))
       )))
 
-(deftest blocking-pop-value-from-queue
+(deftest blocking-pop-value-test
   (testing "consumes a value from a named queue"
     (let [_ (redis/push "mocha" "latte")
           value (redis/blocking-pop "mocha")]
       (is (= value "latte")))))
 
-(deftest processing-pop-from-queue
+(deftest remove-from-processing-test
   (testing "it removes the value from the processing queue"
     (let [original-value "latte"
           _ (redis/push "caramel" original-value)
           popped-value (redis/blocking-pop "caramel")
-          _ (redis/processing-pop original-value)
+          _ (redis/remove-from-processing original-value)
           remaining-vals (redis/lrange @redis/processing-queue 0 0)]
       (is (= popped-value "latte"))
       (is (empty? remaining-vals))
