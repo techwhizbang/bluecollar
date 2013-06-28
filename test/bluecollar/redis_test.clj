@@ -113,3 +113,22 @@
   (testing "uses the default if left unspecified"
     (redis/setup-key-prefix nil)
     (is (= "bluecollar" @redis/redis-key-prefix))))
+
+(deftest processing-pop-test
+  (testing "it removes the next item off of the processing queue"
+    (let [original-value "blintzes"
+          _ (redis/push "cheese" original-value)
+          popped-value (redis/blocking-pop "cheese")
+          processing-pop-val (redis/processing-pop)]
+      (is (= processing-pop-val original-value))))
+  (testing "when there are multiple values on the processing queue"
+    (let [first-value "blintzes"
+          _ (redis/push "cheese" first-value)
+          second-value "pierogies"
+          _ (redis/push "cheese" second-value)
+          _ (dorun (repeatedly 2 #(redis/blocking-pop "cheese")))
+          processing-first-val (redis/processing-pop)
+          processing-sec-val (redis/processing-pop)]
+      (is (= processing-first-val first-value))
+      (is (= processing-sec-val second-value)))
+    ))

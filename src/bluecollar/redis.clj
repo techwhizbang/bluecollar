@@ -93,6 +93,11 @@
   ([queue-name] (pop-to-processing queue-name @pool-and-settings))
   ([queue-name redis-conn] (with-redis-conn redis-conn (redis-client/rpoplpush queue-name @processing-queue))))
 
+(defn processing-pop
+  "Pops a value from the processing queue. Used mostly for recovery purposes at this point."
+  ([] (processing-pop @pool-and-settings))
+  ([redis-conn] (with-redis-conn redis-conn (redis-client/rpop @processing-queue))))
+
 (defn blocking-pop
   "Behaves identically to consume but will wait for timeout or until something is pushed to the queue."
   ([queue-name] (blocking-pop queue-name 2))
