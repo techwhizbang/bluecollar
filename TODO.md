@@ -1,11 +1,4 @@
 # beta release checklist
-* (IN PROGRESS) Re-coverability - if bluecollar terminates ungracefully while processing jobs 
-  and leaves jobs in the "processing" queue; recover the orphaned jobs and retry them.
-    * Each instance of bluecollar should get its own processing queue in Redis.
-    * Interesting problem to solve when distributed, who's in charge of determining what needs recovery?
-    * To be truly distributed it shouldn't be limited to just the process or server that terminated     ungracefully to recover
-    * Maybe initially it is said that the bluecollar instance that terminated ungracefully is in charge or recovering its own jobs.
-    * On boot up it should check its own processing queue for leftover work.
 * Calculate the average run time statistics for each worker
 * Calculate the entire total of successful jobs processed.
 * Calculate the entire total of failed jobs processed.
