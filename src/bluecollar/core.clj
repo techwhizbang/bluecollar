@@ -39,13 +39,15 @@
   application. In that scenario you'll need to provide the details on the hostname, port, db,
   timeout, and prefix. The prefix is purely a naming convention where the value is prepended to
   all of the data structures names stored in Redis.
-  Here is an example using an alternative hostname, port, db, timeout, and namespace:
+  Here is an example using an alternative hostname, port, db, timeout, and prefix:
 
-  => (def redis-settings {:redis-key-prefix \"my-awesome-app\",
-                          :redis-hostname \"redis-master.dc1.com\",
-                          :redis-port 1234,
-                          :redis-db 6,
-                          :redis-timeout 6000})
+  => (def redis-specs {:redis-key-prefix \"my-awesome-app\",
+                       :redis-hostname \"redis-master.dc1.com\",
+                       :redis-port 1234,
+                       :redis-db 6,
+                       :redis-timeout 6000})
+
+  => (bluecollar-setup queue-specs worker-specs redis-specs)
 
   In order to safely shut down bluecollar:
 
