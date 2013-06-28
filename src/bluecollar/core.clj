@@ -37,11 +37,11 @@
   Optionally, bluecollar-setup accepts a third hash-map. The third hash-map contains connection
   details for Redis. Most likely you aren't running Redis on the same server you're running this
   application. In that scenario you'll need to provide the details on the hostname, port, db,
-  timeout, and namespace. Namespace is purely a naming convention prefix associated with all of the
-  data structures stored in Redis.
+  timeout, and prefix. The prefix is purely a naming convention where the value is prepended to
+  all of the data structures names stored in Redis.
   Here is an example using an alternative hostname, port, db, timeout, and namespace:
 
-  => (def redis-settings {:redis-namespace \"whitecollar\",
+  => (def redis-settings {:redis-key-prefix \"my-awesome-app\",
                           :redis-hostname \"redis-master.dc1.com\",
                           :redis-port 1234,
                           :redis-db 6,
@@ -56,12 +56,25 @@
         bluecollar.properties)
   (:require [bluecollar.job-sites :as job-site]
             [bluecollar.redis :as redis]
+            [bluecollar.job-plans :as job-plans]
             [bluecollar.union-rep :as union-rep]
             [clojure.tools.logging :as logger]))
 
 (def job-sites (atom []))
 
-(defn processing-queue-recovery [])
+(defn processing-queue-recovery
+  "Recovers job plans in the processing queue and places them at the front of their appropriate queue."
+  []
+  (let [incomplete-job-plan (redis/processing-pop)]
+    (if-not (nil? incomplete-job-plan)
+      (do
+        (let [a-job-plan (job-plans/from-json incomplete-job-plan)
+              worker (:worker a-job-plan)
+              queue (:queue (union-rep/find-worker worker))]
+        (logger/info "Recovering this job " incomplete-job-plan)
+        (redis/rpush queue incomplete-job-plan))
+        (recur))
+    )))
 
 (defn bluecollar-setup
   "Setup and start bluecollar by passing it the specifications for both the
