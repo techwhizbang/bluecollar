@@ -88,7 +88,30 @@ In order to safely teardown `bluecollar.core`:
 
 `bluecollar.client` is intended to act as a lightweight interface to `bluecollar.core`. It basically pushes job messages to Redis that are picked up and processed by `bluecollar.core`.
 
+In order to start using `bluecollar.client`:
 
+```clj
+(use 'bluecollar.client)
+
+; worker-specs represents a mapping of workers and the functions they are assigned to execute,
+; the queue they gather work from, and if on failure whether they should retry
+(def worker-specs {:worker-one {:fn clojure.core/+, :queue "high-importance", :retry true}
+                   :fibonacci-worker {:fn fibonacci/calculate, :queue "catch-all", :retry false}})
+
+; redis-specs represents the details of how to connect to Redis
+(def redis-specs {:redis-hostname "redis-master.my-awesome-app.com",
+                  :redis-port 1234,
+                  :redis-db 6,
+                  :redis-timeout 6000}) 
+
+(bluecollar-client-setup worker-specs redis-specs)
+```
+
+It is simple to start sending jobs to the workers:
+
+```clj
+(async-job-for :fibonacci-worker [20])
+```
 ## License
 
 Copyright (c) 2013 Nick Zalabak
