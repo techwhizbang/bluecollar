@@ -57,7 +57,7 @@ With Maven:
 processing occurs. Insert `bluecollar.core` to the area of your application 
 where bootstrapping and start up occurs.
 
-In order to start `bluecollar`:
+In order to start `bluecollar.core`:
 ```clj
 (use 'bluecollar.core)
 
@@ -78,7 +78,7 @@ In order to start `bluecollar`:
 (bluecollar-setup queue-specs worker-specs redis-specs)
 ```
 
-In order to safely teardown `bluecollar`:
+In order to safely teardown `bluecollar.core`:
 ```clj
 (use 'bluecollar.core)
 (bluecollar-teardown)
