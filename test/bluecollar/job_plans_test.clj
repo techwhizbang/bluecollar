@@ -107,11 +107,11 @@
 
 (deftest below-failure-threshold-test
   (testing "returns true when it is below the threshold"
-    (stubbing [redis/failure-count (- (deref plan/maximum-failures) 1)]
+    (stubbing [redis/failure-retry-cnt (- (deref plan/maximum-failures) 1)]
       (is (= true (plan/below-failure-threshold? "foo")))))
 
   (testing "returns false when it is above the threshold"
-    (stubbing [redis/failure-count (+ (deref plan/maximum-failures) 1)]
+    (stubbing [redis/failure-retry-cnt (+ (deref plan/maximum-failures) 1)]
       (is (= false (plan/below-failure-threshold? "foo"))))))
 
 (deftest retry-on-failure-test
@@ -122,7 +122,7 @@
                                         false)}
           _ (union-rep/register-workers workers)
           job-plan (plan/new-job-plan :hard-worker [1 2])]
-      (stubbing [redis/failure-count (- (deref plan/maximum-failures) 1)]
+      (stubbing [redis/failure-retry-cnt (- (deref plan/maximum-failures) 1)]
         (is (= false (plan/retry-on-failure? job-plan))))))
 
   (testing "returns false if the number of failures is above the threshold"
@@ -132,7 +132,7 @@
                                         true)}
           _ (union-rep/register-workers workers)
           job-plan (plan/new-job-plan :hard-worker [1 2])]
-      (stubbing [redis/failure-count (+ (deref plan/maximum-failures) 1)]
+      (stubbing [redis/failure-retry-cnt (+ (deref plan/maximum-failures) 1)]
         (is (= false (plan/retry-on-failure? job-plan))))))
 
   (testing "returns true if the registered worker is retryable and failures are below the threshold"
@@ -142,7 +142,7 @@
                                         true)}
           _ (union-rep/register-workers workers)
           job-plan (plan/new-job-plan :hard-worker [1 2])]
-      (stubbing [redis/failure-count (- (deref plan/maximum-failures) 1)]
+      (stubbing [redis/failure-retry-cnt (- (deref plan/maximum-failures) 1)]
         (is (= true (plan/retry-on-failure? job-plan))))))
   )
 
@@ -177,9 +177,9 @@
   (testing "removes the job plan from the failures hash if not retryable"
     (stubbing [plan/retry-on-failure? false]
       (let [job-plan (plan/new-job-plan :hard-worker [123])
-            _ (redis/failure-inc (:uuid job-plan))
+            _ (redis/failure-retry-cnt (:uuid job-plan))
             _ (plan/on-failure job-plan)]
-        (is (= 0 (redis/failure-count (:uuid job-plan)))))))
+        (is (= 0 (redis/failure-retry-cnt (:uuid job-plan)))))))
 
   (testing "always removes the job plan from the processing queue"
     (let [processing-queue @redis/processing-queue

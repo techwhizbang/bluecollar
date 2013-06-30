@@ -5,41 +5,29 @@
 
 (use-redis-test-setup)
 
-(deftest failure-count-total-test
-  (testing "returns the sum of all failures"
-    (dorun 4 (repeatedly #(redis/failure-inc "foo")))
-    (dorun 14 (repeatedly #(redis/failure-inc "bar")))
-    (is (= 20 (redis/failure-count-total)))))
-
-(deftest failure-count-test
+(deftest failure-retry-cnt-test
   (testing "returns zero when there are no failures"
-    (is (= 0 (redis/failure-count "no-failures"))))
+    (is (= 0 (redis/failure-retry-cnt "no-failures"))))
 
-  (testing "returns the correct count of failures"
-    (redis/failure-inc "burger")
-    (is (= 1 (redis/failure-count "burger")))))
-
-(deftest increment-failures-test
   (testing "increments an entry that does not exist yet by one"
-    (redis/failure-inc "sausages")
-    (is (= 1 (redis/failure-count "sausages"))))
+    (redis/failure-retry-inc "burger")
+    (is (= 1 (redis/failure-retry-cnt "burger"))))
 
   (testing "increments an entry that already exists by one"
-    (redis/failure-inc "cheese")
-    (redis/failure-inc "cheese")
-    (is (= 2 (redis/failure-count "cheese")))
-    ))
+    (redis/failure-retry-inc "cheese")
+    (redis/failure-retry-inc "cheese")
+    (is (= 2 (redis/failure-retry-cnt "cheese")))))
 
 (deftest delete-failure-test
   (testing "it removes a key from the failures hash"
-    (redis/failure-inc "pizza")
-    (is (= 1 (redis/failure-count "pizza")))
-    (redis/failure-delete "pizza")
-    (is (= 0 (redis/failure-count "pizza"))))
+    (redis/failure-retry-inc "pizza")
+    (is (= 1 (redis/failure-retry-cnt "pizza")))
+    (redis/failure-retry-del "pizza")
+    (is (= 0 (redis/failure-retry-cnt "pizza"))))
 
   (testing "it doesn't complain if the key doesn't exist in the failures hash"
-    (redis/failure-delete "mushroom frittata")
-    (is (= 0 (redis/failure-count "mushroom frittata")))))
+    (redis/failure-retry-del "mushroom frittata")
+    (is (= 0 (redis/failure-retry-cnt "mushroom frittata")))))
 
 (deftest push-value-onto-queue-test
   (testing "pushes a String value onto a named queued"

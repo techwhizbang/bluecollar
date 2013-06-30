@@ -22,6 +22,10 @@
   ^{:doc "The name of the hash where the count of failed retryable jobs is stored."}
   [] (str @redis-key-prefix ":failed-retryable-counter"))
 
+(defn total-failed-counter
+  ^{:doc "The name of the hash where the total count of failed jobs is stored."}
+  [] (str @redis-key-prefix ":total-failed-counter"))
+
 (defmacro ^{:private true} with-redis-conn [redis-connection & body]
   `(redis-client/with-conn (:pool ~redis-connection) (:settings ~redis-connection) ~@body))
 
@@ -54,23 +58,18 @@
 (defn lrange [queue-name start end]
   (with-redis-conn @pool-and-settings (redis-client/lrange queue-name start end)))
 
-(defn failure-count [uuid]
+(defn failure-retry-cnt [uuid]
   (let [cnt (with-redis-conn @pool-and-settings (redis-client/hget (failed-retryable-counter) uuid))]
     (if (nil? cnt)
       0
       (Integer/parseInt cnt))))
 
-(defn failure-count-total []
-  (let [cnts (with-redis-conn @pool-and-settings (redis-client/hvals (failed-retryable-counter)))
-        cnts-as-ints (map #(Integer/parseInt %) cnts)]
-        (apply + cnts-as-ints)))
-
-(defn failure-inc
-  ([uuid] (failure-inc uuid @pool-and-settings))
+(defn failure-retry-inc
+  ([uuid] (failure-retry-inc uuid @pool-and-settings))
   ([uuid redis-conn] (with-redis-conn redis-conn (redis-client/hincrby (failed-retryable-counter) uuid 1))))
 
-(defn failure-delete
-  ([uuid] (failure-delete uuid @pool-and-settings))
+(defn failure-retry-del
+  ([uuid] (failure-retry-del uuid @pool-and-settings))
   ([uuid redis-conn] (with-redis-conn redis-conn (redis-client/hdel (failed-retryable-counter) uuid))))
 
 (defn remove-from-processing

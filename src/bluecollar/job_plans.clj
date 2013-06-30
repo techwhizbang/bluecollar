@@ -77,7 +77,7 @@
     (redis/remove-from-processing (as-json job-plan-sans-server))))
 
 (defn below-failure-threshold? [uuid]
-  (< (redis/failure-count uuid) @maximum-failures))
+  (< (redis/failure-retry-cnt uuid) @maximum-failures))
 
 (defn retry-on-failure? [job-plan]
   (let [worker-name (get job-plan :worker)
@@ -108,7 +108,7 @@
 
 (defn- retry [job-plan]
   (let [uuid (:uuid job-plan)
-        failures (redis/failure-count uuid)
+        failures (redis/failure-retry-cnt uuid)
         scheduled-runtime (str (time/plus (time/now) (time/secs (retry-delay failures))))
         scheduled-job-plan (assoc job-plan :scheduled-runtime scheduled-runtime)]
     (logger/info "retrying the JobPlan with UUID" uuid "at" scheduled-runtime)
@@ -123,9 +123,9 @@
   (let [uuid (:uuid job-plan)]
     (if (retry-on-failure? job-plan)
       (do
-        (redis/failure-inc uuid)
+        (redis/failure-retry-inc uuid)
         (retry job-plan))
-      (redis/failure-delete uuid))))
+      (redis/failure-retry-del uuid))))
 
 (defn as-runnable [job-plan]
   (let [worker-name (get job-plan :worker)
