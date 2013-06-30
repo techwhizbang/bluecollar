@@ -13,18 +13,18 @@
 
 (defn setup-key-prefix [prefix] (reset! redis-key-prefix (or prefix "bluecollar")))
 
-(def processing-queue (atom (str @redis-key-prefix ":processing-queue")))
+(def processing-queue (atom (str @redis-key-prefix ":processing-queue:default")))
 
 (defn setup-processing-queue [instance-name]
   (reset! processing-queue (str @redis-key-prefix ":processing-queue:" (or instance-name "default"))))
 
-(defn failed-retryable-counter 
-  ^{:doc "The name of the hash where the count of failed retryable jobs is stored."}
-  [] (str @redis-key-prefix ":failed-retryable-counter"))
+(defn failure-retry-counter 
+  ^{:doc "The name of the hash where the count of retryable failed jobs is stored."}
+  [] (str @redis-key-prefix ":failure-retry-counter"))
 
-(defn total-failed-counter
+(defn failure-total-counter
   ^{:doc "The name of the hash where the total count of failed jobs is stored."}
-  [] (str @redis-key-prefix ":total-failed-counter"))
+  [] (str @redis-key-prefix ":failure-total-counter"))
 
 (defmacro ^{:private true} with-redis-conn [redis-connection & body]
   `(redis-client/with-conn (:pool ~redis-connection) (:settings ~redis-connection) ~@body))
@@ -59,18 +59,18 @@
   (with-redis-conn @pool-and-settings (redis-client/lrange queue-name start end)))
 
 (defn failure-retry-cnt [uuid]
-  (let [cnt (with-redis-conn @pool-and-settings (redis-client/hget (failed-retryable-counter) uuid))]
+  (let [cnt (with-redis-conn @pool-and-settings (redis-client/hget (failure-retry-counter) uuid))]
     (if (nil? cnt)
       0
       (Integer/parseInt cnt))))
 
 (defn failure-retry-inc
   ([uuid] (failure-retry-inc uuid @pool-and-settings))
-  ([uuid redis-conn] (with-redis-conn redis-conn (redis-client/hincrby (failed-retryable-counter) uuid 1))))
+  ([uuid redis-conn] (with-redis-conn redis-conn (redis-client/hincrby (failure-retry-counter) uuid 1))))
 
 (defn failure-retry-del
   ([uuid] (failure-retry-del uuid @pool-and-settings))
-  ([uuid redis-conn] (with-redis-conn redis-conn (redis-client/hdel (failed-retryable-counter) uuid))))
+  ([uuid redis-conn] (with-redis-conn redis-conn (redis-client/hdel (failure-retry-counter) uuid))))
 
 (defn remove-from-processing
   "Removes the last occurrence of the given value from the processing queue."

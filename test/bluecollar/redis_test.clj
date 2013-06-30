@@ -18,7 +18,7 @@
     (redis/failure-retry-inc "cheese")
     (is (= 2 (redis/failure-retry-cnt "cheese")))))
 
-(deftest delete-failure-test
+(deftest failure-retry-del-test
   (testing "it removes a key from the failures hash"
     (redis/failure-retry-inc "pizza")
     (is (= 1 (redis/failure-retry-cnt "pizza")))
