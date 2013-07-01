@@ -72,6 +72,16 @@
   ([uuid] (failure-retry-del uuid @pool-and-settings))
   ([uuid redis-conn] (with-redis-conn redis-conn (redis-client/hdel (failure-retry-counter) uuid))))
 
+(defn failure-total-cnt []
+  (let [cnt (with-redis-conn @pool-and-settings (redis-client/get (failure-total-counter)))]
+    (if (nil? cnt)
+      0
+      (Integer/parseInt cnt))))
+
+(defn failure-total-inc
+  ([] (failure-total-inc @pool-and-settings))
+  ([redis-conn] (with-redis-conn redis-conn (redis-client/incr (failure-total-counter)))))
+
 (defn remove-from-processing
   "Removes the last occurrence of the given value from the processing queue."
   ([value] (remove-from-processing value @pool-and-settings))

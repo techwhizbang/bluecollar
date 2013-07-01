@@ -29,6 +29,14 @@
     (redis/failure-retry-del "mushroom frittata")
     (is (= 0 (redis/failure-retry-cnt "mushroom frittata")))))
 
+(deftest failure-total-test
+  (testing "returns zero when there are no failures"
+    (is (= 0 (redis/failure-total-cnt))))
+  
+  (testing "increments the count by one"
+    (dorun (repeatedly 2 #(redis/failure-total-inc)))
+    (is (= 2 (redis/failure-total-cnt)))))
+
 (deftest push-value-onto-queue-test
   (testing "pushes a String value onto a named queued"
     (is (= (redis/push "bacon" "eggs") 1)))
