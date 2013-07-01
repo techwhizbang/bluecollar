@@ -74,7 +74,8 @@
 ; in order to successfully "pop" it from the processing queue it must look like the original JobPlan. 
 (defn on-success [job-plan]
   (let [job-plan-sans-server (dissoc job-plan :server "server")]
-    (redis/remove-from-processing (as-json job-plan-sans-server))))
+    (redis/remove-from-processing (as-json job-plan-sans-server))
+    (redis/success-total-inc)))
 
 (defn below-failure-threshold? [uuid]
   (< (redis/failure-retry-cnt uuid) @maximum-failures))
@@ -146,7 +147,7 @@
           (apply worker-fn args))
         (on-success job-plan)
       (catch Exception e
-        (logger/error e "there was an error when executing JobPlan with UUID:" uuid "for worker" worker-name)
+        (logger/error e "there was an error when executing a JobPlan with UUID:" uuid "for worker" worker-name)
         (on-failure job-plan))
       (finally
         )))

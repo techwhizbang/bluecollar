@@ -53,6 +53,7 @@
 (defn dispatch-work [#^bluecollar.foreman.Foreman a-foreman #^bluecollar.job_plans.JobPlan job-plan]
   "Dispatch the appropriate worker based on the given job-plan."
   (logger/info "Dispatching a worker for JobPlan with UUID: " (:uuid job-plan))
+  ;TODO remove the server host name addition
   (let [job-plan (assoc job-plan :server (:server-hostname a-foreman))]
     (if (plan/schedulable? job-plan)
       (dispatch-scheduled-worker a-foreman job-plan)

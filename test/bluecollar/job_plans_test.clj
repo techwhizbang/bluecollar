@@ -94,8 +94,12 @@
           remaining-vals (redis/lrange processing-queue 0 0)]
         (is (not (empty? current-vals)))
         (is (empty? remaining-vals))
-      )
-    ))
+      ))
+  (testing "always increments the total successes counter"
+    (let [_ (redis/success-total-del)
+          job-plan (plan/new-job-plan :hard-worker [1 3])
+          _ (plan/on-success job-plan)]
+      (is (= 1 (redis/success-total-cnt))))))
 
 (deftest retry-delay-test
   (testing "calculates 5 seconds of delay for 1 failure"

@@ -1,11 +1,10 @@
 # beta release checklist
-* Calculate the entire total of successful jobs processed.
-* Calculate the entire total of failed jobs processed.
 * Calculate the average run time statistics for each worker
 * Indicate server hostname a job plan is being executed.
 * Detailed usage and how-to in "README.md"
     * "bluecollar" startup instructions w/ Leiningen as a daemon, look at lein-daemon
     * include a canonical example application using bluecollar
+    * wiki pages
 * Official domain name, logo, and a nicely styled static "homepage" hosted on Github.
     * Need to get a designer interested for the logo.
 * Get bluecollar added to http://redis.io/clients

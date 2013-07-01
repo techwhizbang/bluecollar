@@ -18,14 +18,6 @@
 (defn setup-processing-queue [instance-name]
   (reset! processing-queue (str @redis-key-prefix ":processing-queue:" (or instance-name "default"))))
 
-(defn failure-retry-counter 
-  ^{:doc "The name of the hash where the count of retryable failed jobs is stored."}
-  [] (str @redis-key-prefix ":failure-retry-counter"))
-
-(defn failure-total-counter
-  ^{:doc "The name of the hash where the total count of failed jobs is stored."}
-  [] (str @redis-key-prefix ":failure-total-counter"))
-
 (defmacro ^{:private true} with-redis-conn [redis-connection & body]
   `(redis-client/with-conn (:pool ~redis-connection) (:settings ~redis-connection) ~@body))
 
@@ -58,6 +50,10 @@
 (defn lrange [queue-name start end]
   (with-redis-conn @pool-and-settings (redis-client/lrange queue-name start end)))
 
+(defn failure-retry-counter
+  ^{:doc "The name of the hash where the count of retryable failed jobs is stored."}
+  [] (str @redis-key-prefix ":failure-retry-counter"))
+
 (defn failure-retry-cnt [uuid]
   (let [cnt (with-redis-conn @pool-and-settings (redis-client/hget (failure-retry-counter) uuid))]
     (if (nil? cnt)
@@ -72,6 +68,10 @@
   ([uuid] (failure-retry-del uuid @pool-and-settings))
   ([uuid redis-conn] (with-redis-conn redis-conn (redis-client/hdel (failure-retry-counter) uuid))))
 
+(defn failure-total-counter
+  ^{:doc "The name of the hash where the total count of failed jobs is stored."}
+  [] (str @redis-key-prefix ":failure-total-counter"))
+
 (defn failure-total-cnt []
   (let [cnt (with-redis-conn @pool-and-settings (redis-client/get (failure-total-counter)))]
     (if (nil? cnt)
@@ -85,6 +85,24 @@
 (defn failure-total-del
   ([] (failure-total-del @pool-and-settings))
   ([redis-conn] (with-redis-conn redis-conn (redis-client/del (failure-total-counter)))))
+
+(defn success-total-counter
+  ^{:doc "The name of the hash where the total count of successful jobs is stored."}
+  [] (str @redis-key-prefix ":success-total-counter"))
+
+(defn success-total-cnt []
+  (let [cnt (with-redis-conn @pool-and-settings (redis-client/get (success-total-counter)))]
+    (if (nil? cnt)
+      0
+      (Integer/parseInt cnt))))
+
+(defn success-total-inc
+  ([] (success-total-inc @pool-and-settings))
+  ([redis-conn] (with-redis-conn redis-conn (redis-client/incr (success-total-counter)))))
+
+(defn success-total-del
+  ([] (success-total-del @pool-and-settings))
+  ([redis-conn] (with-redis-conn redis-conn (redis-client/del (success-total-counter)))))
 
 (defn remove-from-processing
   "Removes the last occurrence of the given value from the processing queue."
