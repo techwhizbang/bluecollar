@@ -82,6 +82,10 @@
   ([] (failure-total-inc @pool-and-settings))
   ([redis-conn] (with-redis-conn redis-conn (redis-client/incr (failure-total-counter)))))
 
+(defn failure-total-del
+  ([] (failure-total-del @pool-and-settings))
+  ([redis-conn] (with-redis-conn redis-conn (redis-client/del (failure-total-counter)))))
+
 (defn remove-from-processing
   "Removes the last occurrence of the given value from the processing queue."
   ([value] (remove-from-processing value @pool-and-settings))

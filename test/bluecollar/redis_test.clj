@@ -37,6 +37,12 @@
     (dorun (repeatedly 2 #(redis/failure-total-inc)))
     (is (= 2 (redis/failure-total-cnt)))))
 
+(deftest failure-total-del-test
+  (redis/failure-total-inc)
+  (is (= 1 (redis/failure-total-cnt)))
+  (redis/failure-total-del)
+  (is (= 0 (redis/failure-total-cnt))))
+
 (deftest push-value-onto-queue-test
   (testing "pushes a String value onto a named queued"
     (is (= (redis/push "bacon" "eggs") 1)))

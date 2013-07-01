@@ -190,7 +190,13 @@
           remaining-vals (redis/lrange processing-queue 0 0)]
         (is (not (empty? current-vals)))
         (is (empty? remaining-vals))
-      )))
+      ))
+
+  (testing "always increments the total failures counter"
+    (let [_ (redis/failure-total-del)
+          job-plan (plan/new-job-plan :hard-worker [1 3])
+          _ (plan/on-failure job-plan)]
+      (is (= 1 (redis/failure-total-cnt))))))
 
 (deftest schedulable-test
   (testing "returns true when a scheduled runtime is present and is in the future"

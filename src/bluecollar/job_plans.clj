@@ -115,9 +115,11 @@
     (async-job-plan scheduled-job-plan)))
 
 (defn on-failure 
-  "Always remove the failed job from the processing queue.
+  "Increment total job failures.
+   Always remove the failed job from the processing queue.
    If allowable, retry the failed job-plan, otherwise remove it's UUID from the failed workers hash."
   [job-plan]
+  (redis/failure-total-inc)
   (logger/debug "Removing" (as-json job-plan) "from processing queue")
   (redis/remove-from-processing (as-json job-plan))
   (let [uuid (:uuid job-plan)]
@@ -136,7 +138,6 @@
     (fn [] 
       (try
         (logger/info "executing a JobPlan with UUID:" uuid "for worker" worker-name)
-        ; TODO push-to-busy-workers
         (if (extends? Hookable JobPlan)
           (do  
             (before job-plan)
@@ -147,7 +148,6 @@
       (catch Exception e
         (logger/error e "there was an error when executing JobPlan with UUID:" uuid "for worker" worker-name)
         (on-failure job-plan))
-      (finally 
-        ; TODO remove from busy-workers
+      (finally
         )))
     ))
