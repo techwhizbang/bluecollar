@@ -22,7 +22,7 @@
 
 (deftest processing-queue-recovery-test
   (testing "recovers jobs uncompleted in the processing queue"
-    (union-rep/register-worker :hard-worker (struct union-rep/worker-definition bluecollar.fake-worker/perform "crunch-numbers" false))
+    (union-rep/register-worker :hard-worker (union-rep/new-worker-definition bluecollar.fake-worker/perform "crunch-numbers" false))
     (let [job-plan (plan/new-job-plan :hard-worker [])
           job-json (plan/as-json job-plan)
           _ (redis/push "crunch-numbers" job-json)

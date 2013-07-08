@@ -8,8 +8,8 @@
             [bluecollar.redis :as redis]
             [clj-time.core :as time]))
 
-(def worker-specs {:hard-worker {:fn bluecollar.fake-worker/perform, :queue "crunch-numbers", :retry false}
-                   :worker-two {:fn bluecollar.fake-worker/explode, :queue "low-importance", :retry true}} )
+(def worker-specs {:hard-worker {:queue "crunch-numbers"}
+                   :worker-two {:queue "low-importance"}} )
 
 (use-fixtures :each (fn [f]
   (reset! bluecollar.fake-worker/perform-called false)

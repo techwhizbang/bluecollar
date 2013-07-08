@@ -4,13 +4,15 @@
    also send asynchronous jobs to registered workers.
 
    In order to setup a bluecollar client application. Create a hash-map
-   containing the worker specifications, just as in bluecollar.core.
+   containing the worker specifications, just as in bluecollar.core, but with 
+   fewer details. The client only needs to specify the workers and what queue
+   their work is to be sent to.
    Also provide the Redis connection details or a default connection will
    be provided.
 
    => (use 'bluecollar.client)
-   => (def worker-specs {:worker-one {:fn clojure.core/+, :queue \"high-importance\", :retry true}
-                         :fibonacci-worker {:fn fibonacci/calculate, :queue \"catch-all\", :retry false}})
+   => (def worker-specs {:worker-one {:queue \"high-importance\"}
+                         :fibonacci-worker {:queue \"catch-all\"}})
    => (bluecollar-client-setup worker-specs)
 
    After performing bluecollar-client-setup the application can begin using
@@ -54,10 +56,9 @@
                     :db (or redis-db 0)
                     :timeout (or redis-timeout 5000)})
     (doseq [[worker-name worker-defn] worker-specs]
-      (union-rep/register-worker worker-name (struct union-rep/worker-definition
-        (:fn worker-defn)
-        (:queue worker-defn)
-        (:retry worker-defn))))))
+      (union-rep/register-worker worker-name 
+                                (union-rep/new-worker-definition (:queue worker-defn))
+                                ))))
 
 (defn bluecollar-client-teardown 
   ^{:doc "Teardown bluecollar for a client application"}

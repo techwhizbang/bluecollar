@@ -99,10 +99,10 @@
                     :db (or redis-db 0)
                     :timeout (or redis-timeout 5000)})
     (doseq [[worker-name worker-defn] worker-specs]
-      (union-rep/register-worker worker-name (struct union-rep/worker-definition
-        (:fn worker-defn)
-        (:queue worker-defn)
-        (:retry worker-defn))))
+      (union-rep/register-worker worker-name 
+                                 (union-rep/new-worker-definition (:fn worker-defn)
+                                                                  (:queue worker-defn)
+                                                                  (:retry worker-defn))))
     (processing-queue-recovery)
     (doseq [[queue-name pool-size] queue-specs]
       (swap! job-sites conj (job-site/new-job-site queue-name pool-size)))

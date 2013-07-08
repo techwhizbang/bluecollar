@@ -19,10 +19,9 @@
 
 (deftest job-site-with-passing-job-plan-test
   (testing "that the job plan is passed to the foreman and the foreman dispatches work"
-    (let [workers {:hard-worker (struct union-rep/worker-definition 
-                                        bluecollar.fake-worker/perform
-                                        testing-queue-name
-                                        false)}
+    (let [workers {:hard-worker (union-rep/new-worker-definition bluecollar.fake-worker/perform
+                                                                 testing-queue-name
+                                                                 false)}
           _ (union-rep/register-workers workers)
           a-job-site (job-site/new-job-site testing-queue-name 5)
           _ (startup a-job-site)
@@ -39,10 +38,9 @@
 (deftest job-site-with-failing-job-plan-test
   (testing "a failing worker is retried the maximum number of times without crashing the process"
     (let [_ (reset! plan/delay-base 1)
-          workers {:failing-worker (struct union-rep/worker-definition 
-                                           bluecollar.fake-worker/explode
-                                           testing-queue-name
-                                           true)}
+          workers {:failing-worker (union-rep/new-worker-definition bluecollar.fake-worker/explode
+                                                                    testing-queue-name
+                                                                    true)}
           _ (union-rep/register-workers workers)
           a-job-site (job-site/new-job-site testing-queue-name 5)
           _ (startup a-job-site)
@@ -57,14 +55,12 @@
 (deftest multi-job-sites-test
   (testing "a failing worker is retried the maximum number of times without crashing the process"
     (let [_ (reset! plan/delay-base 1)
-          workers {:worker-one (struct union-rep/worker-definition 
-                                       bluecollar.fake-worker/counting
-                                       "queue 1"
-                                       true)
-                   :worker-two (struct union-rep/worker-definition 
-                                       bluecollar.fake-worker/counting
-                                       "queue 2"
-                                       true)}
+          workers {:worker-one (union-rep/new-worker-definition bluecollar.fake-worker/counting
+                                                                "queue 1"
+                                                                true)
+                   :worker-two (union-rep/new-worker-definition bluecollar.fake-worker/counting
+                                                                "queue 2"
+                                                                true)}
           _ (union-rep/register-workers workers)
           job-site-1 (job-site/new-job-site "queue 1" 5)
           job-site-2 (job-site/new-job-site "queue 2" 5)

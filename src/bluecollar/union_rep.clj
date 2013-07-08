@@ -1,11 +1,10 @@
 (ns bluecollar.union-rep)
 
-(defstruct worker-definition :fn :queue :retry)
-
 (defrecord WorkerDefinition [func queue retry])
 
-(defn new-worker-definition [func queue retry]
-  (->WorkerDefinition func queue retry))
+(defn new-worker-definition 
+  ([func queue retry] (->WorkerDefinition func queue retry))
+  ([queue] (->WorkerDefinition nil queue nil)))
 
 (def registered-workers
   "worker-definitions are stored here"
@@ -25,5 +24,5 @@
   "Register a single worker-definition with an unique key.
    The key chosen will be the same key used to enqueue
    a worker-definition."
-  [key worker-definition]
-  (swap! registered-workers assoc key worker-definition))
+  [worker-key worker-definition]
+  (swap! registered-workers assoc worker-key worker-definition))

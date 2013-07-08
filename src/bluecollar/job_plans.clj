@@ -83,7 +83,7 @@
 (defn retry-on-failure? [job-plan]
   (let [worker-name (get job-plan :worker)
         registered-worker (union-rep/find-worker worker-name)
-        retryable-worker? (get registered-worker :retry)
+        retryable-worker? (:retry registered-worker)
         uuid (get job-plan :uuid)]
    (and retryable-worker? (below-failure-threshold? uuid))))
 
@@ -101,7 +101,7 @@
     (let [worker-name (get job-plan :worker)
           registered-worker (union-rep/find-worker worker-name)]
     (if-not (nil? registered-worker)
-      (let [queue (get registered-worker :queue)]
+      (let [queue (:queue registered-worker)]
         (redis/push queue (as-json job-plan))
         (:uuid job-plan))
       (throw (RuntimeException. (str worker-name " was not found in the worker registry.")))
@@ -133,7 +133,7 @@
 (defn as-runnable [job-plan]
   (let [worker-name (get job-plan :worker)
         registered-worker (union-rep/find-worker worker-name)
-        worker-fn (get registered-worker :fn)
+        worker-fn (:func registered-worker)
         uuid (:uuid job-plan)
         args (get job-plan :args)]
     (fn [] 

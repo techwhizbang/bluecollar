@@ -40,9 +40,9 @@
     )
 
   (testing "dispatches a worker based on a job plan"
-    (let [workers {:fake-worker (struct union-rep/worker-definition
-                                        bluecollar.fake-worker/perform
-                                        testing-queue-name false)}
+    (let [workers {:fake-worker (union-rep/new-worker-definition bluecollar.fake-worker/perform
+                                                                 testing-queue-name 
+                                                                 false)}
           _ (union-rep/register-workers workers)
           a-foreman (foreman/new-foreman number-of-workers)
           a-job-plan (plan/new-job-plan :fake-worker [1 2])]
@@ -56,9 +56,9 @@
 
 (deftest foreman-dispatch-scheduled-worker-test
   (testing "can dispatch a worker based on a scheduled job plan"
-    (let [workers {:fake-worker (struct union-rep/worker-definition
-                                        bluecollar.fake-worker/perform
-                                        testing-queue-name false)}
+    (let [workers {:fake-worker (union-rep/new-worker-definition bluecollar.fake-worker/perform
+                                                                 testing-queue-name 
+                                                                 false)}
           _ (union-rep/register-workers workers)
           a-foreman (foreman/new-foreman number-of-workers)
           a-job-plan (plan/new-job-plan :fake-worker [1 2] (str (time/plus (time/now) (time/secs 2))))]
