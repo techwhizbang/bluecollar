@@ -1,10 +1,9 @@
-(defproject bluecollar "0.1.0-SNAPSHOT"
-  :description "Bluecollar: an async worker library"
+(defproject bluecollar "1.0.0-beta1"
+  :description "Bluecollar: a simple yet fully featured distributed background processing solution written in Clojure."
   :url "http://github.com/techwhizbang/bluecollar"
-  :license {:name "MIT"
-            :url "http://en.wikipedia.org/wiki/MIT_License"}
-  :dependencies [[org.clojure/clojure "1.4.0"]
-                 [clj-yaml "0.4.0"]
+  :license {:name "Eclipse Public License"
+            :url "http://www.eclipse.org/legal/epl-v10.html"}
+  :dependencies [[org.clojure/clojure "1.5.1"]
                  [clj-time "0.5.1"]
                  [com.taoensso/carmine "1.8.0"] ; Redis client
                  [cheshire "5.1.1"] ; JSON parsing
@@ -15,4 +14,10 @@
                                               javax.jms/jms
                                               com.sun.jdmk/jmxtools
                                               com.sun.jmx/jmxri]]]
-  :profiles {:dev {:dependencies [[org.clojars.runa/conjure "2.1.3"]]}})
+
+  :profiles {:dev {:dependencies [[org.clojars.runa/conjure "2.1.3"]]}
+             :1.3 {:dependencies [[org.clojure/clojure "1.3.0"]]}
+             :1.4 {:dependencies [[org.clojure/clojure "1.4.0"]]}
+             :1.5 {:dependencies [[org.clojure/clojure "1.5.1"]]}}
+
+  :aliases {"test-all" ["with-profile" "dev,default:dev,1.3,default:dev,1.4,default:dev,1.5,default" "test"]})

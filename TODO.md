@@ -1,6 +1,4 @@
 # beta release checklist
-* Calculate the average run time statistics for each worker
-    * "worker-avg-runtime" [20s, 25s, 56s...]
 * Detailed usage and how-to in "README.md"
     * "bluecollar" startup instructions w/ Leiningen as a daemon, look at lein-daemon
     * include a canonical example application using bluecollar
