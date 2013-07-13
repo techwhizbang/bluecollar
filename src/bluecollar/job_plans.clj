@@ -139,17 +139,15 @@
     (fn [] 
       (try
         (logger/info "executing a JobPlan with UUID:" uuid "for worker" worker-name)
-        ; insert worker clocktime start
-;        (let [worker-start-time (time/now)]
+        (let [worker-start-time (time/now)]
           (if (extends? Hookable JobPlan)
             (do  
               (before job-plan)
               (apply worker-fn args)
               (after job-plan))
             (apply worker-fn args))
-          (on-success job-plan)
-          ; TODO append secs to Redis queue (time/in-secs (interval worker-start-time (time/now)))
-;          )
+          (redis/push-worker-runtime worker-name (time/in-msecs (time/interval worker-start-time (time/now))))
+          (on-success job-plan))
       (catch Exception e
         (logger/error e "there was an error when executing a JobPlan with UUID:" uuid "for worker" worker-name)
         (on-failure job-plan))

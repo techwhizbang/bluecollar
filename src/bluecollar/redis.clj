@@ -69,9 +69,9 @@
   ([uuid redis-conn] (with-redis-conn redis-conn (redis-client/hdel (failure-retry-counter) uuid))))
 
 (defn push-worker-runtime
-  "Prepends the worker runtime in seconds."
-  [worker-name runtime-in-secs]
-  (with-redis-conn @pool-and-settings (redis-client/lpush (str @redis-key-prefix ":worker-runtimes:" worker-name) runtime-in-secs)))
+  "Prepends the worker runtime in milliseconds."
+  [worker-name runtime-in-millisecs]
+  (with-redis-conn @pool-and-settings (redis-client/lpush (str @redis-key-prefix ":worker-runtimes:" worker-name) runtime-in-millisecs)))
 
 (defn get-worker-runtimes
   "Returns the last 1000 runtimes recorded for the given worker."
