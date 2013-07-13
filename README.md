@@ -21,7 +21,7 @@ functions that exist in your application and can run them asynchronously, reliab
 
 ## Installation
 
-`bluecollar` artifacts are [released to Clojars](https://clojars.org/techwhizbang/bluecollar).
+`bluecollar` artifacts are [released to Clojars](https://clojars.org/bluecollar/bluecollar).
 
 If you are using Maven, add the following repository definition to your `pom.xml`:
 
