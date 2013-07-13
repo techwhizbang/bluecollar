@@ -68,39 +68,58 @@
   ([uuid] (failure-retry-del uuid @pool-and-settings))
   ([uuid redis-conn] (with-redis-conn redis-conn (redis-client/hdel (failure-retry-counter) uuid))))
 
+(defn push-worker-runtime
+  "Prepends the worker runtime in seconds."
+  [worker-name runtime-in-secs]
+  (with-redis-conn @pool-and-settings (redis-client/lpush (str @redis-key-prefix ":worker-runtimes:" worker-name) runtime-in-secs)))
+
+(defn get-worker-runtimes
+  "Returns the last 1000 runtimes recorded for the given worker."
+  [worker-name]
+  (let [runtimes (with-redis-conn @pool-and-settings (redis-client/lrange (str @redis-key-prefix ":worker-runtimes:" worker-name) 0 999))]
+    (vec (map (fn [runtime] (Integer/parseInt runtime)) runtimes))))
+
 (defn failure-total-counter
-  ^{:doc "The name of the hash where the total count of failed jobs is stored."}
+  ^{:doc "The name of the key where the total count of failed jobs is stored."}
   [] (str @redis-key-prefix ":failure-total-counter"))
 
-(defn failure-total-cnt []
+(defn failure-total-cnt
+  "Returns the number of failed processed jobs."
+  []
   (let [cnt (with-redis-conn @pool-and-settings (redis-client/get (failure-total-counter)))]
     (if (nil? cnt)
       0
       (Integer/parseInt cnt))))
 
 (defn failure-total-inc
+  "Increments the number of failed jobs by 1."
   ([] (failure-total-inc @pool-and-settings))
   ([redis-conn] (with-redis-conn redis-conn (redis-client/incr (failure-total-counter)))))
 
 (defn failure-total-del
+  "Deletes the key that stores the total count of failed jobs."
   ([] (failure-total-del @pool-and-settings))
   ([redis-conn] (with-redis-conn redis-conn (redis-client/del (failure-total-counter)))))
 
 (defn success-total-counter
-  ^{:doc "The name of the hash where the total count of successful jobs is stored."}
+  ^{:doc "The name of the key where the total count of successful jobs is stored."}
   [] (str @redis-key-prefix ":success-total-counter"))
 
-(defn success-total-cnt []
+(defn success-total-cnt
+  "Returns the number of successfully processed jobs."
+  []
   (let [cnt (with-redis-conn @pool-and-settings (redis-client/get (success-total-counter)))]
     (if (nil? cnt)
       0
       (Integer/parseInt cnt))))
 
 (defn success-total-inc
+  "Increments the number of successfully processed jobs by 1."
   ([] (success-total-inc @pool-and-settings))
   ([redis-conn] (with-redis-conn redis-conn (redis-client/incr (success-total-counter)))))
 
 (defn success-total-del
+  "Delete the key that stores the number of successfully processed jobs."
   ([] (success-total-del @pool-and-settings))
   ([redis-conn] (with-redis-conn redis-conn (redis-client/del (success-total-counter)))))
 

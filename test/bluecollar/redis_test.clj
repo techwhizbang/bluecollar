@@ -148,3 +148,9 @@
       (is (= processing-first-val first-value))
       (is (= processing-sec-val second-value)))
     ))
+
+(deftest push-worker-runtime-test
+  (testing "it prepends the latest runtime to the front of the list"
+    (redis/push-worker-runtime "worker-1" 20)
+    (redis/push-worker-runtime "worker-1" 21)
+    (is (= [21 20] (redis/get-worker-runtimes "worker-1")))))
