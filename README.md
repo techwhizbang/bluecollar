@@ -2,8 +2,9 @@
 
 [![Build Status](https://travis-ci.org/techwhizbang/bluecollar.png)](https://travis-ci.org/techwhizbang/bluecollar)
 
-Great news, `bluecollar` is getting close to "beta" completion.
-Please stay tuned for its release!
+Hooray! `bluecollar` 1.0.0-beta1 has been released.
+...but wait there's more! Stay tuned.
+
 
 ## What is it?
 

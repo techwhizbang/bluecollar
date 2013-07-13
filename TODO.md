@@ -1,9 +1,10 @@
-# beta release checklist
-* Detailed usage and how-to in "README.md"
-    * wiki pages
+# RC checklist
+* Wiki pages
+* Functional and load testing
+    * Ensure reliability and recoverability is sound.
+    * Do an example setup of separating bluecollar.client and bluecollar.core distributing bluecollar.core on multiple servers
 * Official domain name, logo, and a nicely styled static "homepage" hosted on Github.
-    * Need to get a designer interested for the logo.
-* Get bluecollar added to http://redis.io/clients
+    * Need to get a designer interested for the homepage.
 
 # future releases
 * A dashboard UI with the following:
@@ -16,6 +17,7 @@
     * Live poll button for realtime updates
     * Web server startup w/ Leiningen command line
     * Might be cool to tinker with Pedestal...hmmm.
+* Get bluecollar added to http://redis.io/clients
 * Batch jobs
     * Group otherwise individual jobs into a grouping that can
       be identified in the UI and their overall progress can be
