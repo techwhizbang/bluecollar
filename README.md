@@ -36,16 +36,16 @@ If you are using Maven, add the following repository definition to your `pom.xml
 With Leiningen:
 
 ``` clj
-Coming soon!
+[bluecollar/bluecollar "1.0.0-beta1"]
 ```
 
 With Maven:
 
 ``` xml
 <dependency>
-  <groupId>techwhizbang</groupId>
+  <groupId>bluecollar</groupId>
   <artifactId>bluecollar</artifactId>
-  <version>Coming Soon!</version>
+  <version>1.0.0-beta1</version>
 </dependency>
 ```
 
