@@ -1,8 +1,6 @@
 # beta release checklist
 * Detailed usage and how-to in "README.md"
-    * "bluecollar" startup instructions w/ Leiningen as a daemon, look at lein-daemon
-    * include a canonical example application using bluecollar
-    * wiki pages  
+    * wiki pages
 * Official domain name, logo, and a nicely styled static "homepage" hosted on Github.
     * Need to get a designer interested for the logo.
 * Get bluecollar added to http://redis.io/clients
