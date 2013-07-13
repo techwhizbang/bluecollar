@@ -7,10 +7,17 @@
   ([queue] (->WorkerDefinition nil queue nil)))
 
 (def registered-workers
-  "worker-definitions are stored here"
+  "WorkerDefinition instances are stored here"
   (atom {}))
 
+(defn clear-registered-workers
+  "Resets any previously registered WorkerDefinition instances"
+  []
+  (reset! registered-workers {}))
+
 (defn find-worker [worker-name]
+  "Find the WorkerDefinition based on the name it was given during
+   setup in bluecollar.core or bluecollar.client."
   (get @registered-workers worker-name))
 
 (defn register-workers

@@ -12,6 +12,7 @@
 
 (use-fixtures :each (fn [f]
   (redis-setup)
+  (union-rep/clear-registered-workers)
   (reset! bluecollar.fake-worker/perform-called false)
   (reset! bluecollar.fake-worker/fake-worker-failures 0)
   (f)))

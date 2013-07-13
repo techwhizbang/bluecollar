@@ -1,7 +1,6 @@
 # beta release checklist
 * Calculate the average run time statistics for each worker
     * "worker-avg-runtime" [20s, 25s, 56s...]
-* Indicate server hostname a job plan is being executed.
 * Detailed usage and how-to in "README.md"
     * "bluecollar" startup instructions w/ Leiningen as a daemon, look at lein-daemon
     * include a canonical example application using bluecollar
@@ -15,6 +14,7 @@
     * Monitor number of workers busy
     * Monitor number of workers idle
     * Monitor the retry queue
+    * Monitor average runtime of each worker
     * Monitor current jobs and queues currently being processed
     * Monitor number of failed jobs
     * Live poll button for realtime updates

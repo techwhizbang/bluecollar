@@ -26,7 +26,7 @@
   => { :worker-one {:fn clojure.core/+, :queue \"high-importance\", :retry true}
        :worker-two {:fn nick.zalabak/blog, :queue \"catch-all\", :retry false} }
 
-  In order to start bluecollar:
+  In order to setup bluecollar.core:
 
   => (use 'bluecollar.core)
   => (def queue-specs {\"high-importance\" 10 \"medium-importance\" 5 \"catch-all\" 5})

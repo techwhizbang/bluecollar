@@ -81,16 +81,16 @@
   (< (redis/failure-retry-cnt uuid) @maximum-failures))
 
 (defn retry-on-failure? [job-plan]
-  (let [worker-name (get job-plan :worker)
+  (let [worker-name (:worker job-plan)
         registered-worker (union-rep/find-worker worker-name)
         retryable-worker? (:retry registered-worker)
-        uuid (get job-plan :uuid)]
+        uuid (:uuid job-plan)]
    (and retryable-worker? (below-failure-threshold? uuid))))
 
 (defn retry-delay [failures] (Math/pow @delay-base failures))
 
 (defn async-job-plan
-  ^{:doc "Push a JobPlan to a registered worker's queue to process asynchronously.
+  ^{:doc "Push a JobPlan to a queue specified by a WorkerDefinition to process asynchronously.
           If it successfully pushes the JobPlan it will return the UUID associated
           with the JobPlan."}
   ([worker-name #^clojure.lang.PersistentVector args]
@@ -98,7 +98,7 @@
   ([worker-name args scheduled-runtime]
     (async-job-plan (new-job-plan worker-name args scheduled-runtime)))
   ([job-plan]
-    (let [worker-name (get job-plan :worker)
+    (let [worker-name (:worker job-plan)
           registered-worker (union-rep/find-worker worker-name)]
     (if-not (nil? registered-worker)
       (let [queue (:queue registered-worker)]
@@ -131,21 +131,25 @@
       (redis/failure-retry-del uuid))))
 
 (defn as-runnable [job-plan]
-  (let [worker-name (get job-plan :worker)
+  (let [worker-name (:worker job-plan)
         registered-worker (union-rep/find-worker worker-name)
         worker-fn (:func registered-worker)
         uuid (:uuid job-plan)
-        args (get job-plan :args)]
+        args (:args job-plan)]
     (fn [] 
       (try
         (logger/info "executing a JobPlan with UUID:" uuid "for worker" worker-name)
-        (if (extends? Hookable JobPlan)
-          (do  
-            (before job-plan)
-            (apply worker-fn args)
-            (after job-plan))
-          (apply worker-fn args))
-        (on-success job-plan)
+        ; insert worker clocktime start
+;        (let [worker-start-time (time/now)]
+          (if (extends? Hookable JobPlan)
+            (do  
+              (before job-plan)
+              (apply worker-fn args)
+              (after job-plan))
+            (apply worker-fn args))
+          (on-success job-plan)
+          ; TODO append secs to Redis queue (time/in-secs (interval worker-start-time (time/now)))
+;          )
       (catch Exception e
         (logger/error e "there was an error when executing a JobPlan with UUID:" uuid "for worker" worker-name)
         (on-failure job-plan))

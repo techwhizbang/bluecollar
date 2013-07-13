@@ -67,7 +67,7 @@ In order to start `bluecollar.core`:
 ; worker-specs represents a mapping of workers and the functions they are assigned to execute,
 ; the queue they gather work from, and if on failure whether they should retry
 (def worker-specs {:worker-one {:fn clojure.core/+, :queue "high-importance", :retry true}
-                   :worker-two {:fn nick.zalabak/blog, :queue "catch-all", :retry false}})
+                   :fibonacci-worker {:fn fibonacci/calc, :queue "catch-all", :retry false}})
 
 ; redis-specs represents the details of how to connect to Redis
 (def redis-specs {:redis-hostname "redis-master.my-awesome-app.com",
@@ -94,9 +94,9 @@ In order to start using `bluecollar.client`:
 (use 'bluecollar.client)
 
 ; worker-specs represents a mapping of workers and the queue they send work to
-; the client worker-specs do NOT contain details of the fn or retry as in the core worker-specs
-(def worker-specs {:worker-one {:queue "high-importance"}
-                   :fibonacci-worker {:queue "catch-all"}})
+; just like bluecollar.core
+(def worker-specs {:worker-one {:fn clojure.core/+, :queue "high-importance", :retry true}
+                   :fibonacci-worker {:fn fibonacci/calc, :queue "catch-all", :retry false}})
 
 ; redis-specs represents the details of how to connect to Redis
 (def redis-specs {:redis-hostname "redis-master.my-awesome-app.com",

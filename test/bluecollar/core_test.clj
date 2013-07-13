@@ -15,6 +15,7 @@
 (use-fixtures :each (fn [f]
   (reset! bluecollar.fake-worker/fake-worker-failures 0)
   (reset! bluecollar.fake-worker/cnt-me 0)
+  (union-rep/clear-registered-workers)
   (redis/flushdb)
   (f)
   (reset! bluecollar.fake-worker/fake-worker-failures 0)

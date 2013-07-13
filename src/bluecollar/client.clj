@@ -4,21 +4,26 @@
    also send asynchronous jobs to registered workers.
 
    In order to setup a bluecollar client application. Create a hash-map
-   containing the worker specifications, just as in bluecollar.core, but with 
-   fewer details. The client only needs to specify the workers and what queue
-   their work is to be sent to.
-   Also provide the Redis connection details or a default connection will
-   be provided.
+   containing the worker specifications, just as in bluecollar.core.
+   The value for each worker specification is a hash map containing 3 required things:
+    1.) The queue it should be placed on in order to be processed.
+    2.) The namespace and function it should execute when being processed.
+    3.) The ability to retry if the job given to the worker results in an exception.
+
+  In this example there are 2 worker specifications:
+
+  => { :worker-one {:fn clojure.core/+, :queue \"high-importance\", :retry true}
+       :fibonacci-worker {:fn fibonacci/calc, :queue \"catch-all\", :retry false} }
 
    => (use 'bluecollar.client)
-   => (def worker-specs {:worker-one {:queue \"high-importance\"}
-                         :fibonacci-worker {:queue \"catch-all\"}})
+   => (def worker-specs {:worker-one {:fn clojure.core/+, :queue \"high-importance\", :retry true}
+                         :fibonacci-worker {:fn fibonacci/calc, :queue \"catch-all\", :retry false}})
    => (bluecollar-client-setup worker-specs)
 
    After performing bluecollar-client-setup the application can begin using
    \"async-job-for\".
 
-   Assuming :fibonacci-worker takes a single argument, namely the number of 
+   Assuming :fibonacci-worker :fn takes a single argument, namely the number of 
    Fibonacci numbers to calculate in a sequence, the client can 
    send :fibonacci-worker a job just like this:
 
@@ -33,7 +38,7 @@
    => (async-job-for :fibonacci-worker [400] \"2013-06-23T21:44:32.391Z\")
    "
   (:use [bluecollar.job-plans :only [async-job-plan]]
-        bluecollar.properties)
+         bluecollar.properties)
   (:require [bluecollar.redis :as redis]
             [bluecollar.union-rep :as union-rep]
             [clojure.tools.logging :as logger]))

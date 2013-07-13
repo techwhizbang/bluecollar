@@ -5,7 +5,7 @@
             [bluecollar.fake-worker]))
 
 (use-fixtures :each (fn [f]
-  (reset! union-rep/registered-workers {})
+  (union-rep/clear-registered-workers)
   (f)))
 
 (deftest registered-workers-test

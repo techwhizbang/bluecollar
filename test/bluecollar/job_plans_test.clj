@@ -9,6 +9,7 @@
             [bluecollar.fake-worker]))
 
 (use-fixtures :each (fn [f]
+  (union-rep/clear-registered-workers)
   (redis/startup redis-test-settings)
   (redis/flushdb)
   (reset! bluecollar.fake-worker/perform-called false)
