@@ -1,22 +1,22 @@
-(ns bluecollar.union-rep)
+(ns bluecollar.workers-union)
 
-(defrecord WorkerDefinition [func queue retry])
+(defrecord UnionizedWorker [func queue retry])
 
-(defn new-worker-definition 
-  ([func queue retry] (->WorkerDefinition func queue retry))
-  ([queue] (->WorkerDefinition nil queue nil)))
+(defn new-unionized-worker
+  ([func queue retry] (->UnionizedWorker func queue retry))
+  ([queue] (->UnionizedWorker nil queue nil)))
 
 (def registered-workers
-  "WorkerDefinition instances are stored here"
+  "UnionizedWorker instances are stored here"
   (atom {}))
 
 (defn clear-registered-workers
-  "Resets any previously registered WorkerDefinition instances"
+  "Resets any previously registered UnionizedWorker instances"
   []
   (reset! registered-workers {}))
 
 (defn find-worker [worker-name]
-  "Find the WorkerDefinition based on the name it was given during
+  "Find the UnionizedWorker based on the name it was given during
    setup in bluecollar.core or bluecollar.client."
   (get @registered-workers worker-name))
 

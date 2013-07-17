@@ -5,11 +5,11 @@
   (:require [clj-time.core :as time]
             [bluecollar.job-plans :as plan]
             [bluecollar.redis :as redis]
-            [bluecollar.union-rep :as union-rep]
+            [bluecollar.workers-union :as workers-union]
             [bluecollar.fake-worker]))
 
 (use-fixtures :each (fn [f]
-  (union-rep/clear-registered-workers)
+  (workers-union/clear-registered-workers)
   (redis/startup redis-test-settings)
   (redis/flushdb)
   (reset! bluecollar.fake-worker/perform-called false)
@@ -74,10 +74,10 @@
       ))
 
   (testing "makes an executable function for the worker"
-    (let [workers {:hard-worker (union-rep/new-worker-definition bluecollar.fake-worker/perform
+    (let [workers {:hard-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform
                                                                  "crunch-numbers"
                                                                  false)}
-          _ (union-rep/register-workers workers)
+          _ (workers-union/register-workers workers)
           a-job-plan (plan/new-job-plan :hard-worker [1 2])
           _ ((plan/as-runnable a-job-plan))]
       (is (true? (deref bluecollar.fake-worker/perform-called)))
@@ -120,28 +120,28 @@
 
 (deftest retry-on-failure-test
   (testing "returns false if the registered worker is not retryable"
-    (let [workers {:hard-worker (union-rep/new-worker-definition bluecollar.fake-worker/perform
+    (let [workers {:hard-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform
                                                                  "crunch-numbers"
                                                                  false)}
-          _ (union-rep/register-workers workers)
+          _ (workers-union/register-workers workers)
           job-plan (plan/new-job-plan :hard-worker [1 2])]
       (stubbing [redis/failure-retry-cnt (- (deref plan/maximum-failures) 1)]
         (is (= false (plan/retry-on-failure? job-plan))))))
 
   (testing "returns false if the number of failures is above the threshold"
-    (let [workers {:hard-worker (union-rep/new-worker-definition bluecollar.fake-worker/perform
+    (let [workers {:hard-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform
                                                                  "crunch-numbers"
                                                                  true)}
-          _ (union-rep/register-workers workers)
+          _ (workers-union/register-workers workers)
           job-plan (plan/new-job-plan :hard-worker [1 2])]
       (stubbing [redis/failure-retry-cnt (+ (deref plan/maximum-failures) 1)]
         (is (= false (plan/retry-on-failure? job-plan))))))
 
   (testing "returns true if the registered worker is retryable and failures are below the threshold"
-    (let [workers {:hard-worker (union-rep/new-worker-definition bluecollar.fake-worker/perform
+    (let [workers {:hard-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform
                                                                  "crunch-numbers"
                                                                  true)}
-          _ (union-rep/register-workers workers)
+          _ (workers-union/register-workers workers)
           job-plan (plan/new-job-plan :hard-worker [1 2])]
       (stubbing [redis/failure-retry-cnt (- (deref plan/maximum-failures) 1)]
         (is (= true (plan/retry-on-failure? job-plan))))))
@@ -152,10 +152,10 @@
     (let [now-ish (time/now)]
       (stubbing [plan/retry-on-failure? true
                  time/now now-ish]
-        (let [workers {:hard-worker (union-rep/new-worker-definition bluecollar.fake-worker/perform
+        (let [workers {:hard-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform
                                                                      "crunch-numbers"
                                                                     true)}
-              _ (union-rep/register-workers workers)
+              _ (workers-union/register-workers workers)
               job-plan-original (plan/new-job-plan :hard-worker [123])
               job-plan-to-retry (assoc job-plan-original :scheduled-runtime (str (time/plus now-ish (time/secs (deref plan/delay-base)))))  
               _ (plan/on-failure job-plan-original)]
@@ -164,10 +164,10 @@
           ))))
 
   (testing "does not re-enqueue the job plan when the worker does not allow retries"
-    (let [workers {:hard-worker (union-rep/new-worker-definition bluecollar.fake-worker/perform
+    (let [workers {:hard-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform
                                                                  "crunch-numbers"
                                                                  false)}
-          _ (union-rep/register-workers workers)
+          _ (workers-union/register-workers workers)
           job-plan (plan/new-job-plan :hard-worker [123])
           _ (plan/on-failure job-plan)]
       (is (nil? (redis/pop-to-processing "crunch-numbers")))

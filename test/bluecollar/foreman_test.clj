@@ -6,13 +6,13 @@
             [bluecollar.job-plans :as plan]
             [bluecollar.fake-worker]
             [clj-time.core :as time]
-            [bluecollar.union-rep :as union-rep]))
+            [bluecollar.workers-union :as workers-union]))
 
 (def number-of-workers 5)
 
 (use-fixtures :each (fn [f]
   (redis-setup)
-  (union-rep/clear-registered-workers)
+  (workers-union/clear-registered-workers)
   (reset! bluecollar.fake-worker/perform-called false)
   (reset! bluecollar.fake-worker/fake-worker-failures 0)
   (f)))
@@ -41,10 +41,10 @@
     )
 
   (testing "dispatches a worker based on a job plan"
-    (let [workers {:fake-worker (union-rep/new-worker-definition bluecollar.fake-worker/perform
+    (let [workers {:fake-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform
                                                                  testing-queue-name 
                                                                  false)}
-          _ (union-rep/register-workers workers)
+          _ (workers-union/register-workers workers)
           a-foreman (foreman/new-foreman number-of-workers)
           a-job-plan (plan/new-job-plan :fake-worker [1 2])]
       (do
@@ -57,10 +57,10 @@
 
 (deftest foreman-dispatch-scheduled-worker-test
   (testing "can dispatch a worker based on a scheduled job plan"
-    (let [workers {:fake-worker (union-rep/new-worker-definition bluecollar.fake-worker/perform
+    (let [workers {:fake-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform
                                                                  testing-queue-name 
                                                                  false)}
-          _ (union-rep/register-workers workers)
+          _ (workers-union/register-workers workers)
           a-foreman (foreman/new-foreman number-of-workers)
           a-job-plan (plan/new-job-plan :fake-worker [1 2] (str (time/plus (time/now) (time/secs 2))))]
       (do

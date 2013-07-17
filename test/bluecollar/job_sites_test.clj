@@ -5,13 +5,13 @@
     bluecollar.test-helper)
   (:require [bluecollar.redis :as redis]
             [bluecollar.fake-worker]
-            [bluecollar.union-rep :as union-rep]
+            [bluecollar.workers-union :as workers-union]
             [bluecollar.job-sites :as job-site]
             [bluecollar.job-plans :as plan]
             [cheshire.core :as json]))
 
 (use-fixtures :each (fn [f]
-  (union-rep/clear-registered-workers)
+  (workers-union/clear-registered-workers)
   (redis/startup redis-test-settings)
   (redis/flushdb)
   (reset! bluecollar.fake-worker/perform-called false)
@@ -20,10 +20,10 @@
 
 (deftest job-site-with-passing-job-plan-test
   (testing "that the job plan is passed to the foreman and the foreman dispatches work"
-    (let [workers {:hard-worker (union-rep/new-worker-definition bluecollar.fake-worker/perform
+    (let [workers {:hard-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform
                                                                  testing-queue-name
                                                                  false)}
-          _ (union-rep/register-workers workers)
+          _ (workers-union/register-workers workers)
           a-job-site (job-site/new-job-site testing-queue-name 5)
           _ (startup a-job-site)
           _ (Thread/sleep 1000)
@@ -39,10 +39,10 @@
 (deftest job-site-with-failing-job-plan-test
   (testing "a failing worker is retried the maximum number of times without crashing the process"
     (let [_ (reset! plan/delay-base 1)
-          workers {:failing-worker (union-rep/new-worker-definition bluecollar.fake-worker/explode
+          workers {:failing-worker (workers-union/new-unionized-worker bluecollar.fake-worker/explode
                                                                     testing-queue-name
                                                                     true)}
-          _ (union-rep/register-workers workers)
+          _ (workers-union/register-workers workers)
           a-job-site (job-site/new-job-site testing-queue-name 5)
           _ (startup a-job-site)
           _ (Thread/sleep 1000) 
@@ -56,13 +56,13 @@
 (deftest multi-job-sites-test
   (testing "a failing worker is retried the maximum number of times without crashing the process"
     (let [_ (reset! plan/delay-base 1)
-          workers {:worker-one (union-rep/new-worker-definition bluecollar.fake-worker/counting
+          workers {:worker-one (workers-union/new-unionized-worker bluecollar.fake-worker/counting
                                                                 "queue 1"
                                                                 true)
-                   :worker-two (union-rep/new-worker-definition bluecollar.fake-worker/counting
+                   :worker-two (workers-union/new-unionized-worker bluecollar.fake-worker/counting
                                                                 "queue 2"
                                                                 true)}
-          _ (union-rep/register-workers workers)
+          _ (workers-union/register-workers workers)
           job-site-1 (job-site/new-job-site "queue 1" 5)
           job-site-2 (job-site/new-job-site "queue 2" 5)
           _ (startup job-site-1)

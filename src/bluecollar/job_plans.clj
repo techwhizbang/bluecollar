@@ -3,7 +3,7 @@
             [clj-time.core :as time]
             [clj-time.coerce :as time-coerce]
             [clj-time.format :as time-parser]
-            [bluecollar.union-rep :as union-rep]
+            [bluecollar.workers-union :as workers-union]
             [bluecollar.redis :as redis]
             [clojure.tools.logging :as logger]))
 
@@ -82,7 +82,7 @@
 
 (defn retry-on-failure? [job-plan]
   (let [worker-name (:worker job-plan)
-        registered-worker (union-rep/find-worker worker-name)
+        registered-worker (workers-union/find-worker worker-name)
         retryable-worker? (:retry registered-worker)
         uuid (:uuid job-plan)]
    (and retryable-worker? (below-failure-threshold? uuid))))
@@ -90,7 +90,7 @@
 (defn retry-delay [failures] (Math/pow @delay-base failures))
 
 (defn async-job-plan
-  ^{:doc "Push a JobPlan to a queue specified by a WorkerDefinition to process asynchronously.
+  ^{:doc "Push a JobPlan to a queue specified by a UnionizedWorker to process asynchronously.
           If it successfully pushes the JobPlan it will return the UUID associated
           with the JobPlan."}
   ([worker-name #^clojure.lang.PersistentVector args]
@@ -99,7 +99,7 @@
     (async-job-plan (new-job-plan worker-name args scheduled-runtime)))
   ([job-plan]
     (let [worker-name (:worker job-plan)
-          registered-worker (union-rep/find-worker worker-name)]
+          registered-worker (workers-union/find-worker worker-name)]
     (if-not (nil? registered-worker)
       (let [queue (:queue registered-worker)]
         (redis/push queue (as-json job-plan))
@@ -132,7 +132,7 @@
 
 (defn as-runnable [job-plan]
   (let [worker-name (:worker job-plan)
-        registered-worker (union-rep/find-worker worker-name)
+        registered-worker (workers-union/find-worker worker-name)
         worker-fn (:func registered-worker)
         uuid (:uuid job-plan)
         args (:args job-plan)]

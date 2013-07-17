@@ -5,7 +5,7 @@
         bluecollar.test-helper)
   (:require [bluecollar.fake-worker :as fake-worker]
             [bluecollar.job-plans :as plan]
-            [bluecollar.union-rep :as union-rep]
+            [bluecollar.workers-union :as workers-union]
             [bluecollar.redis :as redis]))
 
 (def queue-specs {"high-importance" 10 "medium-importance" 5 "low-importance" 5})
@@ -15,7 +15,7 @@
 (use-fixtures :each (fn [f]
   (reset! bluecollar.fake-worker/fake-worker-failures 0)
   (reset! bluecollar.fake-worker/cnt-me 0)
-  (union-rep/clear-registered-workers)
+  (workers-union/clear-registered-workers)
   (redis/flushdb)
   (f)
   (reset! bluecollar.fake-worker/fake-worker-failures 0)
@@ -23,7 +23,7 @@
 
 (deftest processing-queue-recovery-test
   (testing "recovers jobs uncompleted in the processing queue"
-    (union-rep/register-worker :hard-worker (union-rep/new-worker-definition bluecollar.fake-worker/perform "crunch-numbers" false))
+    (workers-union/register-worker :hard-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform "crunch-numbers" false))
     (let [job-plan (plan/new-job-plan :hard-worker [])
           job-json (plan/as-json job-plan)
           _ (redis/push "crunch-numbers" job-json)

@@ -40,7 +40,7 @@
   (:use [bluecollar.job-plans :only [async-job-plan]]
          bluecollar.properties)
   (:require [bluecollar.redis :as redis]
-            [bluecollar.union-rep :as union-rep]
+            [bluecollar.workers-union :as workers-union]
             [clojure.tools.logging :as logger]))
 
 (defn bluecollar-client-setup
@@ -61,8 +61,8 @@
                     :db (or redis-db 0)
                     :timeout (or redis-timeout 5000)})
     (doseq [[worker-name worker-defn] worker-specs]
-      (union-rep/register-worker worker-name 
-                                (union-rep/new-worker-definition (:queue worker-defn))
+      (workers-union/register-worker worker-name
+                                (workers-union/new-unionized-worker (:queue worker-defn))
                                 ))))
 
 (defn bluecollar-client-teardown 
@@ -70,7 +70,7 @@
   [] 
   (reset! redis/redis-key-prefix nil)
   (redis/shutdown)
-  (reset! union-rep/registered-workers {}))
+  (reset! workers-union/registered-workers {}))
 
 (defn async-job-for
   ^{:doc "Send a registered worker a job to process asynchronously.

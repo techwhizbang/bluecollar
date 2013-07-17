@@ -59,7 +59,7 @@
   (:require [bluecollar.job-sites :as job-site]
             [bluecollar.redis :as redis]
             [bluecollar.job-plans :as job-plans]
-            [bluecollar.union-rep :as union-rep]
+            [bluecollar.workers-union :as workers-union]
             [clojure.tools.logging :as logger]))
 
 (def job-sites (atom []))
@@ -72,7 +72,7 @@
       (do
         (let [a-job-plan (job-plans/from-json incomplete-job-plan)
               worker (:worker a-job-plan)
-              queue (:queue (union-rep/find-worker worker))]
+              queue (:queue (workers-union/find-worker worker))]
         (logger/info "Recovering this job " incomplete-job-plan)
         (redis/rpush queue incomplete-job-plan))
         (recur))
@@ -99,8 +99,8 @@
                     :db (or redis-db 0)
                     :timeout (or redis-timeout 5000)})
     (doseq [[worker-name worker-defn] worker-specs]
-      (union-rep/register-worker worker-name 
-                                 (union-rep/new-worker-definition (:fn worker-defn)
+      (workers-union/register-worker worker-name
+                                 (workers-union/new-unionized-worker (:fn worker-defn)
                                                                   (:queue worker-defn)
                                                                   (:retry worker-defn))))
     (processing-queue-recovery)
@@ -115,6 +115,6 @@
   (if-not (empty? @job-sites)
     (do
       (doseq [site @job-sites] (shutdown site))
-      (reset! union-rep/registered-workers {})
+      (reset! workers-union/registered-workers {})
       (reset! job-sites [])
       (redis/shutdown))))

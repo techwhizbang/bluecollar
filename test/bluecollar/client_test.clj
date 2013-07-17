@@ -2,7 +2,7 @@
   (:use clojure.test
         bluecollar.test-helper
         bluecollar.client)
-  (:require [bluecollar.union-rep :as union-rep]
+  (:require [bluecollar.workers-union :as workers-union]
             [bluecollar.job-plans :as plan]
             [bluecollar.fake-worker]
             [bluecollar.redis :as redis]
@@ -13,7 +13,7 @@
 
 (use-fixtures :each (fn [f]
   (reset! bluecollar.fake-worker/perform-called false)
-  (union-rep/clear-registered-workers)
+  (workers-union/clear-registered-workers)
   (redis/shutdown)
   (bluecollar-client-setup worker-specs {:redis-key-prefix "fleur-de-sel"})
   (redis/flushdb)
@@ -22,7 +22,7 @@
 
 (deftest bluecollar-client-setup-test
   (testing "registers the worker specs"
-    (is (not (empty? @union-rep/registered-workers))))
+    (is (not (empty? @workers-union/registered-workers))))
 
   (testing "sets the Redis connection"
     (is (= "PONG" (redis/ping))))
@@ -33,7 +33,7 @@
 (deftest bluecollar-client-teardown-test
   (testing "teardown works properly"
     (bluecollar-client-teardown)
-    (is (empty? @union-rep/registered-workers))
+    (is (empty? @workers-union/registered-workers))
     (is (nil? @redis/redis-key-prefix))))
 
 (deftest async-job-for-test
@@ -48,7 +48,7 @@
     (is (not (nil? (redis/pop-to-processing "crunch-numbers")))))
   
   (testing "throws a RuntimeException when an unregistered worker is encountered"
-    (let [_ (reset! bluecollar.union-rep/registered-workers {})]
+    (let [_ (reset! bluecollar.workers-union/registered-workers {})]
       (is (thrown-with-msg? RuntimeException #":hard-worker was not found in the worker registry." (async-job-for :hard-worker [1 3])))
       )
     ))

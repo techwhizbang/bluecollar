@@ -2,7 +2,7 @@
   (:use bluecollar.lifecycle)
   (:import java.util.concurrent.Executors
            java.util.concurrent.ExecutorService)
-  (:require [bluecollar.union-rep :as union-rep]
+  (:require [bluecollar.workers-union :as workers-union]
             [bluecollar.job-plans :as plan]
             [clojure.tools.logging :as logger]))
 
