@@ -119,6 +119,10 @@ It is simple to start sending jobs to the workers:
 Have a peek at the [example_app](https://github.com/techwhizbang/bluecollar/tree/master/example_app) if you'd like to
 see a more concrete example of how to use `bluecollar`.
 
+## Thanks
+
+A special thanks to [Ben Day](https://github.com/benjiuday) for creating the `bluecollar` logo.
+
 ## License
 
 Copyright (c) 2013 Nick Zalabak
