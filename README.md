@@ -1,16 +1,19 @@
 # bluecollar
 
 [![Build Status](https://travis-ci.org/techwhizbang/bluecollar.png)](https://travis-ci.org/techwhizbang/bluecollar)
-
-Hooray! `bluecollar` 1.0.0-beta1 has been released.
-...but wait there's more! Stay tuned.
-
+ 
+<img src="https://raw.github.com/techwhizbang/bluecollar/master/creative/bluecollar_dude.png"
+ alt="Bluecollar logo" title="Bluecollar Dude" align="right" height="388" width="300"/>
 
 ## What is it?
 
-The aim of `bluecollar` is to provide a simple yet fully featured distributed background processing solution written in Clojure.
+The aim of `bluecollar` is to provide a simple yet fully featured distributed background processing solution written in Clojure.  
+  
+<br/><br/><br/>
+      
+      
 
-## Who is it for?
+## Who is it for?  
 
 Any Clojure application that is tasked with lots of time and/or resource intensive operations. 
 
