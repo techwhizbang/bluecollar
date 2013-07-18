@@ -4,7 +4,7 @@
    and processing them in the same process.
 
    In some situtations where you're processing intensive jobs you would choose to run one
-   or many bluecollar.core process on many servers separate from your web or service layer."
+   or many bluecollar.core processes on many servers separate from your web or service layer."
   (use bluecollar.core
        bluecollar.client
        compojure.core
@@ -15,7 +15,7 @@
   (str "That was hard work!!!"))
 
 (def worker-specs {:hard-worker {:fn example-app.core/heavy-lifting, :queue "high-importance", :retry true}})
-(def queue-specs {"high-importance" 10})
+(def queue-specs {"high-importance" 100})
 
 (defroutes app
   (GET "/" []
