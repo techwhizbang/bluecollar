@@ -15,7 +15,8 @@ The aim of `bluecollar` is to provide a simple yet fully featured distributed ba
 
 ## Who is it for?  
 
-Any Clojure application that is tasked with lots of time and/or resource intensive operations. 
+Any Clojure application that is tasked with lots of time and/or resource intensive operations that require
+reliability.
 
 ## What does it do exactly?
 
