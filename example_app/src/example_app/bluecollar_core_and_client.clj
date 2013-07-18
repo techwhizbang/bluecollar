@@ -1,20 +1,22 @@
-(ns example-app.core
+(ns example-app.bluecollar-core-and-client
   "This is an example application where bluecollar.core and bluecollar.client
    are side by side in a single process. In other words, you are sending jobs to be done
    and processing them in the same process.
 
    In some situtations where you're processing intensive jobs you would choose to run one
-   or many bluecollar.core processes on many servers separate from your web or service layer."
+   or many bluecollar.core processes on many servers separate from your web or service layer.
+   See bluecollar-core-only.clj for an of this.
+
+   To start:
+   => lein run -m example-app.bluecollar-core-and-client"
+
   (use bluecollar.core
        bluecollar.client
        compojure.core
-       ring.adapter.jetty))
+       ring.adapter.jetty)
+  (require [example-app.worker]))
 
-(defn heavy-lifting [sleep-millis]
-  (Thread/sleep sleep-millis)
-  (str "That was hard work!!!"))
-
-(def worker-specs {:hard-worker {:fn example-app.core/heavy-lifting, :queue "high-importance", :retry true}})
+(def worker-specs {:hard-worker {:fn example-app.worker/heavy-lifting, :queue "high-importance", :retry true}})
 (def queue-specs {"high-importance" 100})
 
 (defroutes app

@@ -7,4 +7,4 @@
                  [bluecollar/bluecollar "1.0.0-beta2"]
                  [compojure "1.1.5"]
                  [ring "1.2.0"]]
-  :main example-app.core)
+  :main example-app.bluecollar-core-and-client)
