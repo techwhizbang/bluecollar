@@ -18,8 +18,7 @@
     (future
       (while @(:continue-running this)
         (try
-          (let [value (redis/blocking-pop (:site-name this))]
-            (logger/debug "JobSite" (:site-name this) "received a message " value)
+          (let [value (redis/blocking-pop (redis/prefix-queue (:site-name this)))]
             (if (and (not (nil? value)) (not (coll? value)))
               (do
                 (logger/info "JobSite" (:site-name this) "received a message " value)

@@ -13,10 +13,12 @@
 
 (defn setup-key-prefix [prefix] (reset! redis-key-prefix (or prefix "bluecollar")))
 
-(def processing-queue (atom (str @redis-key-prefix ":processing-queue:default")))
+(defn prefix-queue [queue-name] (str @redis-key-prefix ":" queue-name))
+
+(def processing-queue (atom (prefix-queue "processing-queue:default")))
 
 (defn setup-processing-queue [instance-name]
-  (reset! processing-queue (str @redis-key-prefix ":processing-queue:" (or instance-name "default"))))
+  (reset! processing-queue (prefix-queue (str "processing-queue:" (or instance-name "default")))))
 
 (defmacro ^{:private true} with-redis-conn [redis-connection & body]
   `(redis-client/with-conn (:pool ~redis-connection) (:settings ~redis-connection) ~@body))

@@ -1,5 +1,9 @@
 # bluecollar changelog
 
+## 1.0.0-beta3 - TBD
+
+* Fixed bug where the user defined queue names are not being prefixed properly ie. queue-blah should be "bluecollar:queue-blah"
+
 ## 1.0.0-beta2 - July 16, 2013
 
 * fixing a little formatting defect showing

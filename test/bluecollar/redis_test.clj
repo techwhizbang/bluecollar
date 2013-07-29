@@ -5,6 +5,10 @@
 
 (use-redis-test-setup)
 
+(deftest queue-prefix-test
+  (testing "prepends bluecollar to the queue name"
+    (is (= "bluecollar:chocolate-chips" (redis/prefix-queue "chocolate-chips")))))
+
 (deftest failure-retry-cnt-test
   (testing "returns zero when there are no failures"
     (is (= 0 (redis/failure-retry-cnt "no-failures"))))
