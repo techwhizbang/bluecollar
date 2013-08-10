@@ -15,10 +15,19 @@
 
 (defn prefix-queue [queue-name] (str @redis-key-prefix ":" queue-name))
 
-(def processing-queue (atom (prefix-queue "processing-queue:default")))
+(def bluecollar-queue-names {:master "master-queue" :processing "processing-queue"})
 
-(defn setup-processing-queue [instance-name]
-  (reset! processing-queue (prefix-queue (str "processing-queue:" (or instance-name "default")))))
+(def bluecollar-queues {:master (atom "master-queue") :processing (atom "processing-queue")})
+
+; TODO deref the atoms here
+(def master-queue (:master bluecollar-queues))
+(def processing-queue (:processing bluecollar-queues))
+
+(defn setup-queues [instance-name]
+  (reset! (:master bluecollar-queues)
+    (prefix-queue (:master bluecollar-queue-names)))
+  (reset! (:processing bluecollar-queues)
+    (prefix-queue (str (:processing bluecollar-queue-names) ":" (or instance-name "default")))))
 
 (defmacro ^{:private true} with-redis-conn [redis-connection & body]
   `(redis-client/with-conn (:pool ~redis-connection) (:settings ~redis-connection) ~@body))

@@ -118,12 +118,17 @@
       (is (empty? remaining-vals))
       )))
 
-(deftest setup-processing-queue-test
-  (testing "it resets the processing queue to include a custom name"
-    (redis/setup-processing-queue "server23")
+(deftest master-queue-test
+  (testing "it returns the master queue with the default prefix"
+    (is (= "bluecollar:master-queue") redis/master-queue)))
+
+(deftest setup-queues-test
+  (testing "it resets the queues to include a custom name"
+    (redis/setup-queues "server23")
     (is (= "bluecollar:processing-queue:server23" @redis/processing-queue)))
-  (testing "uses the default if left unspecified"
-    (redis/setup-processing-queue nil)
+  (testing "uses the default queue names if left unspecified"
+    (redis/setup-queues nil)
+    (is (= "bluecollar:master-queue" @redis/master-queue))
     (is (= "bluecollar:processing-queue:default" @redis/processing-queue))))
 
 (deftest setup-prefix-test

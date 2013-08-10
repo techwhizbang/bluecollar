@@ -93,7 +93,7 @@
                               instance-name :instance-name}]
     (logger/info "Bluecollar setup is beginning...")
     (redis/setup-key-prefix redis-key-prefix)
-    (redis/setup-processing-queue instance-name)
+    (redis/setup-queues instance-name)
     (redis/startup {:host (or redis-hostname "127.0.0.1")
                     :port (or redis-port 6379)
                     :db (or redis-db 0)
