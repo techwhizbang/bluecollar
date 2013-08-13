@@ -6,7 +6,8 @@
   (:require [bluecollar.fake-worker :as fake-worker]
             [bluecollar.job-plans :as plan]
             [bluecollar.workers-union :as workers-union]
-            [bluecollar.redis :as redis]))
+            [bluecollar.redis :as redis]
+            [bluecollar.keys-and-queues :as keys-qs]))
 
 (def queue-specs {"high-importance" 10 "medium-importance" 5 "low-importance" 5})
 (def worker-specs {:worker-one {:fn bluecollar.fake-worker/counting, :queue "high-importance", :retry false}
@@ -29,18 +30,20 @@
           _ (redis/push "crunch-numbers" job-json)
           _ (redis/blocking-pop "crunch-numbers")
           queue-cnt (count (redis/lrange "crunch-numbers" 0 0))
-          processing-cnt (count (redis/lrange @redis/processing-queue 0 0))]
+          processing-cnt (count (redis/lrange "processing" 0 0))]
           (is (= 0 queue-cnt))
           (is (= 1 processing-cnt))
           (processing-queue-recovery)
           (is (= 1 (count (redis/lrange "crunch-numbers" 0 0))))
-          (is (= 0 (count (redis/lrange @redis/processing-queue 0 0))))
+          (is (= 0 (count (redis/lrange "processing" 0 0))))
           (is (= job-json (redis/blocking-pop "crunch-numbers"))))))
 
 (deftest bluecollar-setup-teardown-test
   (testing "can successfully setup and teardown the bluecollar environment"
     (bluecollar-setup queue-specs worker-specs)
     (Thread/sleep 1000)
+    ; check that the master JobSite is there
+    (is (not (nil? @master-site)))
     ; check that there are the correct number of JobSites
     (is (= (count (keys queue-specs)) (count @job-sites)))
     ; send some work that should be processed on successful startup
@@ -53,6 +56,8 @@
     ; tear it down
     (bluecollar-teardown)
     (Thread/sleep 1000)
+    ; ensure the master JobSite is nil
+    (is (nil? @master-site))
     ; ensure the JobSites are empty
     (is (empty? @job-sites))
     ; send more work but it won't get processed

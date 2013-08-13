@@ -102,7 +102,7 @@
           registered-worker (workers-union/find-worker worker-name)]
     (if-not (nil? registered-worker)
       (let [queue (:queue registered-worker)]
-        (redis/push (redis/prefix-queue queue) (as-json job-plan))
+        (redis/push queue (as-json job-plan))
         (:uuid job-plan))
       (throw (RuntimeException. (str worker-name " was not found in the worker registry.")))
       ))))

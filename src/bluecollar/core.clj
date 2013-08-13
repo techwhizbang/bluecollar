@@ -60,9 +60,11 @@
             [bluecollar.redis :as redis]
             [bluecollar.job-plans :as job-plans]
             [bluecollar.workers-union :as workers-union]
+            [bluecollar.keys-and-queues :as keys-qs]
             [clojure.tools.logging :as logger]))
 
 (def job-sites (atom []))
+(def master-site (atom nil))
 
 (defn processing-queue-recovery
   "Recovers job plans in the processing queue and places them at the front of their appropriate queue."
@@ -92,20 +94,24 @@
                               redis-timeout :timeout
                               instance-name :instance-name}]
     (logger/info "Bluecollar setup is beginning...")
-    (redis/setup-key-prefix redis-key-prefix)
-    (redis/setup-queues instance-name)
+    (keys-qs/setup-prefix redis-key-prefix)
+    (keys-qs/register-queues (keys queue-specs) instance-name)
+    (keys-qs/register-keys)
     (redis/startup {:host (or redis-hostname "127.0.0.1")
                     :port (or redis-port 6379)
                     :db (or redis-db 0)
                     :timeout (or redis-timeout 5000)})
     (doseq [[worker-name worker-defn] worker-specs]
       (workers-union/register-worker worker-name
-                                 (workers-union/new-unionized-worker (:fn worker-defn)
-                                                                  (:queue worker-defn)
-                                                                  (:retry worker-defn))))
+                                     (workers-union/new-unionized-worker (:fn worker-defn)
+                                                                         (:queue worker-defn)
+                                                                         (:retry worker-defn))))
     (processing-queue-recovery)
+    (reset! master-site (job-site/new-job-site keys-qs/master-queue-name 10))
     (doseq [[queue-name pool-size] queue-specs]
       (swap! job-sites conj (job-site/new-job-site queue-name pool-size)))
+
+    (startup @master-site )
     (doseq [site @job-sites] (startup site))))
 
 (defn bluecollar-teardown
@@ -114,6 +120,8 @@
   (logger/info "Bluecollar is being torn down...")
   (if-not (empty? @job-sites)
     (do
+      (shutdown @master-site)
+      (reset! master-site nil)
       (doseq [site @job-sites] (shutdown site))
       (reset! workers-union/registered-workers {})
       (reset! job-sites [])

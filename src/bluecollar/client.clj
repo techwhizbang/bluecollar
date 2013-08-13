@@ -41,6 +41,7 @@
          bluecollar.properties)
   (:require [bluecollar.redis :as redis]
             [bluecollar.workers-union :as workers-union]
+            [bluecollar.keys-and-queues :as keys-qs]
             [clojure.tools.logging :as logger]))
 
 (defn bluecollar-client-setup
@@ -55,7 +56,7 @@
                   redis-db :redis-db
                   redis-timeout :timeout}]
     (logger/info "Bluecollar client is starting up...")
-    (redis/setup-key-prefix redis-key-prefix)
+    (keys-qs/setup-prefix redis-key-prefix)
     (redis/startup {:host (or redis-hostname "127.0.0.1")
                     :port (or redis-port 6379)
                     :db (or redis-db 0)
@@ -68,7 +69,7 @@
 (defn bluecollar-client-teardown 
   ^{:doc "Teardown bluecollar for a client application"}
   [] 
-  (reset! redis/redis-key-prefix nil)
+  (keys-qs/setup-prefix nil)
   (redis/shutdown)
   (reset! workers-union/registered-workers {}))
 

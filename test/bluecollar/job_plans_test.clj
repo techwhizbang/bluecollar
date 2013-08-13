@@ -86,12 +86,11 @@
 
 (deftest on-success-test
   (testing "successfully removes a job plan from the processing queue"
-    (let [processing-queue @redis/processing-queue
-          job-plan (plan/new-job-plan :hard-worker [1 3])
-          _ (redis/push processing-queue (plan/as-json job-plan))
-          current-vals (redis/lrange processing-queue 0 0)
+    (let [job-plan (plan/new-job-plan :hard-worker [1 3])
+          _ (redis/push "processing" (plan/as-json job-plan))
+          current-vals (redis/lrange "processing" 0 0)
           _ (plan/on-success job-plan)
-          remaining-vals (redis/lrange processing-queue 0 0)]
+          remaining-vals (redis/lrange "processing" 0 0)]
         (is (not (empty? current-vals)))
         (is (empty? remaining-vals))
       ))
@@ -159,7 +158,7 @@
               job-plan-original (plan/new-job-plan :hard-worker [123])
               job-plan-to-retry (assoc job-plan-original :scheduled-runtime (str (time/plus now-ish (time/secs (deref plan/delay-base)))))  
               _ (plan/on-failure job-plan-original)]
-          (is (= job-plan-to-retry (plan/from-json (redis/pop-to-processing (redis/prefix-queue "crunch-numbers")))))
+          (is (= job-plan-to-retry (plan/from-json (redis/pop-to-processing "crunch-numbers"))))
           (is (not (nil? (redis/remove-from-processing (plan/as-json job-plan-to-retry)))))
           ))))
 
@@ -170,7 +169,7 @@
           _ (workers-union/register-workers workers)
           job-plan (plan/new-job-plan :hard-worker [123])
           _ (plan/on-failure job-plan)]
-      (is (nil? (redis/pop-to-processing (redis/prefix-queue "crunch-numbers"))))
+      (is (nil? (redis/pop-to-processing "crunch-numbers")))
     ))
 
   (testing "removes the job plan from the failures hash if not retryable"
@@ -181,12 +180,11 @@
         (is (= 0 (redis/failure-retry-cnt (:uuid job-plan)))))))
 
   (testing "always removes the job plan from the processing queue"
-    (let [processing-queue @redis/processing-queue
-          job-plan (plan/new-job-plan :hard-worker [1 3])
-          _ (redis/push processing-queue (plan/as-json job-plan))
-          current-vals (redis/lrange processing-queue 0 0)
+    (let [job-plan (plan/new-job-plan :hard-worker [1 3])
+          _ (redis/push "processing" (plan/as-json job-plan))
+          current-vals (redis/lrange "processing" 0 0)
           _ (plan/on-failure job-plan)
-          remaining-vals (redis/lrange processing-queue 0 0)]
+          remaining-vals (redis/lrange "processing" 0 0)]
         (is (not (empty? current-vals)))
         (is (empty? remaining-vals))
       ))

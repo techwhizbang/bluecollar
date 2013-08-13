@@ -1,13 +1,14 @@
 (ns bluecollar.redis-test
   (:use clojure.test
         bluecollar.test-helper)
-  (:require [bluecollar.redis :as redis]))
+  (:require [bluecollar.redis :as redis]
+            [bluecollar.keys-and-queues :as keys-qs]))
 
-(use-redis-test-setup)
-
-(deftest queue-prefix-test
-  (testing "prepends bluecollar to the queue name"
-    (is (= "bluecollar:chocolate-chips" (redis/prefix-queue "chocolate-chips")))))
+(use-fixtures :each (fn [f]
+  (redis-setup)
+  (keys-qs/register-keys)
+  (keys-qs/register-queues nil nil)
+  (f)))
 
 (deftest failure-retry-cnt-test
   (testing "returns zero when there are no failures"
@@ -91,7 +92,7 @@
   (testing "places the pop valued into the processing queue"
     (let [_ (redis/push "deep dish" "pizza")
           _ (redis/pop-to-processing "deep dish")
-          values (redis/lrange @redis/processing-queue 0 0)]
+          values (redis/lrange "processing" 0 0)]
       (is (= (first values) "pizza")))
     )
 
@@ -113,31 +114,10 @@
           _ (redis/push "caramel" original-value)
           popped-value (redis/blocking-pop "caramel")
           _ (redis/remove-from-processing original-value)
-          remaining-vals (redis/lrange @redis/processing-queue 0 0)]
+          remaining-vals (redis/lrange "processing" 0 0)]
       (is (= popped-value "latte"))
       (is (empty? remaining-vals))
       )))
-
-(deftest master-queue-test
-  (testing "it returns the master queue with the default prefix"
-    (is (= "bluecollar:master-queue") redis/master-queue)))
-
-(deftest setup-queues-test
-  (testing "it resets the queues to include a custom name"
-    (redis/setup-queues "server23")
-    (is (= "bluecollar:processing-queue:server23" @redis/processing-queue)))
-  (testing "uses the default queue names if left unspecified"
-    (redis/setup-queues nil)
-    (is (= "bluecollar:master-queue" @redis/master-queue))
-    (is (= "bluecollar:processing-queue:default" @redis/processing-queue))))
-
-(deftest setup-prefix-test
-  (testing "it resets the Redis prefix to include a custom name"
-    (redis/setup-key-prefix "whitecollar")
-    (is (= "whitecollar" @redis/redis-key-prefix)))
-  (testing "uses the default if left unspecified"
-    (redis/setup-key-prefix nil)
-    (is (= "bluecollar" @redis/redis-key-prefix))))
 
 (deftest processing-pop-test
   (testing "it removes the next item off of the processing queue"
