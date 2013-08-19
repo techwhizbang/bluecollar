@@ -18,25 +18,19 @@
 (deftest job-plan-test
   (testing "takes a worker and a vector of args"
     (let [job-plan (plan/new-job-plan :a-worker ["a" "b"])]
-      (is (= job-plan (plan/->JobPlan :a-worker, ["a" "b"] (:uuid job-plan) nil nil)))))
+      (is (= job-plan (plan/->JobPlan :a-worker, ["a" "b"] (:uuid job-plan) nil)))))
 
   (testing "takes a worker, vector of args, and a scheduled-runtime"
     (stubbing [plan/generate-uuid "random-uuid"]
       (let [now (str (time/now))
             job-plan (plan/new-job-plan :b-worker ["c" "d"] now)]
-          (is (= job-plan (plan/->JobPlan :b-worker, ["c" "d"], "random-uuid", now, nil))))))
+          (is (= job-plan (plan/->JobPlan :b-worker, ["c" "d"], "random-uuid", now))))))
 
   (testing "takes a worker, vector of args, UUID, and scheduled-runtime"
     (let [uuid (str (java.util.UUID/randomUUID))
           now (str (time/now))
           job-plan (plan/new-job-plan :b-worker ["c" "d"] uuid now)]
-        (is (= job-plan (plan/->JobPlan :b-worker, ["c" "d"], uuid, now, nil)))))
-
-  (testing "takes a worker, vector of args, UUID, scheduled-runtime, and a server"
-    (let [uuid (str (java.util.UUID/randomUUID))
-          now (str (time/now))
-          job-plan (plan/new-job-plan :b-worker ["c" "d"] uuid now "blue01.dc1")]
-        (is (= job-plan (plan/->JobPlan :b-worker, ["c" "d"], uuid, now, "blue01.dc1"))))))
+        (is (= job-plan (plan/->JobPlan :b-worker, ["c" "d"], uuid, now))))))
 
 (deftest new-job-plan-test
   (testing "creates a new job plan with a UUID"
@@ -50,14 +44,14 @@
   (testing "converts a plan to JSON without a scheduled-runtime"
     (let [job-plan (plan/new-job-plan :hard-worker [1 2] nil nil)]
       (is (= (plan/as-json job-plan)
-        "{\"worker\":\"hard-worker\",\"args\":[1,2],\"uuid\":null,\"scheduled-runtime\":null,\"server\":null}")))
+        "{\"worker\":\"hard-worker\",\"args\":[1,2],\"uuid\":null,\"scheduled-runtime\":null}")))
     )
 
   (testing "converts a plan to JSON with a scheduled-runtime"
     (let [now (str (time/now))
           job-plan (plan/new-job-plan :hard-worker [1 2] nil now)]
       (is (= (plan/as-json job-plan)
-        (str "{\"worker\":\"hard-worker\",\"args\":[1,2],\"uuid\":null,\"scheduled-runtime\":\"" now "\",\"server\":null}")))))
+        (str "{\"worker\":\"hard-worker\",\"args\":[1,2],\"uuid\":null,\"scheduled-runtime\":\"" now "\"}")))))
   )
 
 (deftest plan-from-json-test

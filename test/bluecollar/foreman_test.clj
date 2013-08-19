@@ -36,14 +36,10 @@
     ))
 
 (deftest foreman-dispatch-worker-test
-  (testing "assigns the server hostname to the job plan during dispatch"
-    ;TODO fill this is
-    )
-
   (testing "dispatches a worker based on a job plan"
     (let [workers {:fake-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform
-                                                                 testing-queue-name 
-                                                                 false)}
+                                                                    testing-queue-name 
+                                                                    false)}
           _ (workers-union/register-workers workers)
           a-foreman (foreman/new-foreman number-of-workers)
           a-job-plan (plan/new-job-plan :fake-worker [1 2])]

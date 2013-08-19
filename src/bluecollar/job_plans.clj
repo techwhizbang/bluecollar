@@ -15,7 +15,7 @@
   (before [_] "Add any 'global' functionality that will run exactly prior to every JobPlan's execution.")
   (after [_] "Add any 'global' functionality that will run exactly after to every JobPlan's execution."))
 
-(defrecord JobPlan [worker #^clojure.lang.PersistentVector args uuid scheduled-runtime server])
+(defrecord JobPlan [worker #^clojure.lang.PersistentVector args uuid scheduled-runtime])
 
 (extend-type JobPlan
   Schedulable
@@ -49,15 +49,13 @@
    The optional scheduled runtime must be specified in ISO8601 date/time string format (ie. 2013-05-25T23:40:15.011Z)." 
   ([worker args] (new-job-plan worker args nil))
   ([worker args scheduled-runtime] (new-job-plan worker args (generate-uuid) scheduled-runtime))
-  ([worker args uuid scheduled-runtime] (new-job-plan worker args uuid scheduled-runtime nil))
-  ([worker args uuid scheduled-runtime server] (->JobPlan (keyword worker) args uuid scheduled-runtime server)))
+  ([worker args uuid scheduled-runtime] (->JobPlan (keyword worker) args uuid scheduled-runtime)))
 
 (defn as-json [job-plan]
   (let [job-plan-map {:worker (:worker job-plan)
                       :args (:args job-plan)
                       :uuid (:uuid job-plan)
-                      :scheduled-runtime (time-coerce/to-string (:scheduled-runtime job-plan))
-                      :server (:server job-plan)}]
+                      :scheduled-runtime (time-coerce/to-string (:scheduled-runtime job-plan))}]
     (json/generate-string job-plan-map)))
 
 (defn from-json [plan-as-json]
@@ -65,17 +63,12 @@
     (new-job-plan (get parsed-map "worker") 
                   (get parsed-map "args") 
                   (get parsed-map "uuid") 
-                  (get parsed-map "scheduled-runtime")
-                  (get parsed-map "server"))
+                  (get parsed-map "scheduled-runtime"))
     ))
 
-; intentionally removing the server attribute since it is a JIT addition during work
-; dispatch and is not part of the original JobPlan at the time of enqueueing;
-; in order to successfully "pop" it from the processing queue it must look like the original JobPlan. 
 (defn on-success [job-plan]
-  (let [job-plan-sans-server (dissoc job-plan :server "server")]
-    (redis/remove-from-processing (as-json job-plan-sans-server))
-    (redis/success-total-inc)))
+  (redis/remove-from-processing (as-json job-plan))
+  (redis/success-total-inc))
 
 (defn below-failure-threshold? [uuid]
   (< (redis/failure-retry-cnt uuid) @maximum-failures))
