@@ -107,11 +107,14 @@
                                                                          (:queue worker-defn)
                                                                          (:retry worker-defn))))
     (processing-queue-recovery)
+
     (reset! master-site (job-site/new-job-site keys-qs/master-queue-name 10))
+
+    (startup @master-site)
+
     (doseq [[queue-name pool-size] queue-specs]
       (swap! job-sites conj (job-site/new-job-site queue-name pool-size)))
 
-    (startup @master-site )
     (doseq [site @job-sites] (startup site))))
 
 (defn bluecollar-teardown

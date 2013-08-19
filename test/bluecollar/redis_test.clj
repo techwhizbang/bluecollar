@@ -106,7 +106,13 @@
   (testing "consumes a value from a named queue"
     (let [_ (redis/push "mocha" "latte")
           value (redis/blocking-pop "mocha")]
-      (is (= value "latte")))))
+      (is (= value "latte"))))
+
+  (testing "places the value from the queue into the named processing queue"
+    (let [_ (redis/push "basil" "pesto")
+          value (redis/blocking-pop "basil" "basil-processing" 2)
+          value-from-processing (redis/processing-pop "basil-processing")]
+      (is (= value value-from-processing)))))
 
 (deftest remove-from-processing-test
   (testing "it removes the value from the processing queue"

@@ -117,8 +117,9 @@
 
 (defn processing-pop
   "Pops a value from the processing queue. Used mostly for recovery purposes at this point."
-  ([] (processing-pop @pool-and-settings))
-  ([redis-conn] (with-redis-conn redis-conn (redis-client/rpop (keys-qs/fetch-queue "processing")))))
+  ([] (processing-pop "processing"))
+  ([processing-queue-name] (processing-pop processing-queue-name @pool-and-settings))
+  ([processing-queue-name redis-conn] (with-redis-conn redis-conn (redis-client/rpop (keys-qs/fetch-queue processing-queue-name)))))
 
 (defn remove-from-processing
   "Removes the last occurrence of the given value from the processing queue."
@@ -128,5 +129,6 @@
 (defn blocking-pop
   "Behaves identically to consume but will wait for timeout or until something is pushed to the queue."
   ([queue-name] (blocking-pop queue-name 2))
-  ([queue-name timeout] (blocking-pop queue-name timeout @pool-and-settings))
-  ([queue-name timeout redis-conn] (with-redis-conn redis-conn (redis-client/brpoplpush (keys-qs/fetch-queue queue-name) (keys-qs/fetch-queue "processing") timeout))))
+  ([queue-name timeout] (blocking-pop queue-name "processing" timeout))
+  ([queue-name processing-queue-name timeout] (blocking-pop queue-name processing-queue-name timeout @pool-and-settings))
+  ([queue-name processing-queue-name timeout redis-conn] (with-redis-conn redis-conn (redis-client/brpoplpush (keys-qs/fetch-queue queue-name) (keys-qs/fetch-queue processing-queue-name) timeout))))
