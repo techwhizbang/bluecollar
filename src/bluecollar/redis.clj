@@ -5,10 +5,13 @@
 
 (defrecord RedisConnection [pool settings])
 
-(def ^:private pool-and-settings (atom nil))
+(def pool-and-settings (atom nil))
 
-(defmacro ^{:private true} with-redis-conn [redis-connection & body]
+(defmacro with-redis-conn [redis-connection & body]
   `(redis-client/with-conn (:pool ~redis-connection) (:settings ~redis-connection) ~@body))
+
+(defmacro with-transaction [& body]
+  `(with-redis-conn (deref pool-and-settings) (redis-client/multi) ~@body (redis-client/exec)))
 
 (defn redis-settings
   ^{:doc "The connection timeout setting is millisecond based.
@@ -105,10 +108,27 @@
   ([queue-name value] (push queue-name value @pool-and-settings))
   ([queue-name value redis-conn] (with-redis-conn redis-conn (redis-client/lpush (keys-qs/fetch-queue queue-name) value))))
 
+(defn push-no-conn
+  "Push a value to the head of the named queue."
+  [queue-name value] (redis-client/lpush (keys-qs/fetch-queue queue-name) value))
+
+(defn rpush-no-conn
+  "Push a value to the tail of the queue."
+  [queue-name value] (redis-client/rpush (keys-qs/fetch-queue queue-name) value))
+
 (defn rpush
   "Push a value to the tail of the queue."
   ([queue-name value] (rpush queue-name value @pool-and-settings))
   ([queue-name value redis-conn] (with-redis-conn redis-conn (redis-client/rpush (keys-qs/fetch-queue queue-name) value))))
+
+(defn rpop
+  "Pops a value from the tail of the queue."
+  ([queue-name] (rpop queue-name @pool-and-settings))
+  ([queue-name redis-conn] (with-redis-conn redis-conn (redis-client/rpop (keys-qs/fetch-queue queue-name)))))
+
+(defn brpop-no-conn
+  "Pops a value from the tail of the queue."
+  ([queue-name] (redis-client/brpop (keys-qs/fetch-queue queue-name) 2)))
 
 (defn pop-to-processing
   "Pops a value from the queue and places the value into the processing queue."
@@ -117,14 +137,15 @@
 
 (defn processing-pop
   "Pops a value from the processing queue. Used mostly for recovery purposes at this point."
-  ([] (processing-pop "processing"))
-  ([processing-queue-name] (processing-pop processing-queue-name @pool-and-settings))
-  ([processing-queue-name redis-conn] (with-redis-conn redis-conn (redis-client/rpop (keys-qs/fetch-queue processing-queue-name)))))
+  ([] (rpop "processing"))
+  ([processing-queue-name] (rpop processing-queue-name @pool-and-settings))
+  ([processing-queue-name redis-conn] (rpop processing-queue-name redis-conn)))
 
 (defn remove-from-processing
   "Removes the last occurrence of the given value from the processing queue."
-  ([value] (remove-from-processing value @pool-and-settings))
-  ([value redis-conn] (with-redis-conn redis-conn (redis-client/lrem (keys-qs/fetch-queue "processing") -1 value))))
+  ([value] (remove-from-processing value "processing"))
+  ([value queue] (remove-from-processing value queue @pool-and-settings))
+  ([value queue redis-conn] (with-redis-conn redis-conn (redis-client/lrem (keys-qs/fetch-queue queue) -1 value))))
 
 (defn blocking-pop
   "Behaves identically to consume but will wait for timeout or until something is pushed to the queue."

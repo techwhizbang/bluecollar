@@ -4,7 +4,7 @@
 
 (defn new-unionized-worker
   ([func queue retry] (->UnionizedWorker func queue retry))
-  ([queue] (->UnionizedWorker nil queue nil)))
+  ([] (->UnionizedWorker nil nil nil)))
 
 (def registered-workers
   "UnionizedWorker instances are stored here"

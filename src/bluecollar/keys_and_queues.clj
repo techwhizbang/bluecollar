@@ -47,6 +47,7 @@
   queue-registry (atom {}))
 
 (def master-queue-name "master")
+(def master-processing-queue-name "master-processing")
 (def processing-queue-name "processing")
 
 (defn- register-queue [queue-name]
@@ -60,13 +61,14 @@
         (fetch-queue queue-name))
       q)))
 
-(defn- register-processing-queue [instance-name]
-  (swap! queue-registry assoc processing-queue-name
-    (prefix-key (str "queues:" (str processing-queue-name "-" (or instance-name "default"))))))
+(defn- register-processing-queues [instance-name]
+  (doseq [queue [master-processing-queue-name processing-queue-name]]
+    (swap! queue-registry assoc queue
+      (prefix-key (str "queues:" (str queue "-" (or instance-name "default")))))))
 
 (defn register-queues [queues instance-name]
   (reset! queue-registry nil)
   (register-queue master-queue-name)
-  (register-processing-queue instance-name)
+  (register-processing-queues instance-name)
   (doseq [queue queues]
     (register-queue queue)))

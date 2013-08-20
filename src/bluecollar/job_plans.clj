@@ -5,6 +5,7 @@
             [clj-time.format :as time-parser]
             [bluecollar.workers-union :as workers-union]
             [bluecollar.redis :as redis]
+            [bluecollar.keys-and-queues :as keys-and-qs]
             [clojure.tools.logging :as logger]))
 
 (defprotocol Schedulable
@@ -83,7 +84,7 @@
 (defn retry-delay [failures] (Math/pow @delay-base failures))
 
 (defn async-job-plan
-  ^{:doc "Push a JobPlan to a queue specified by a UnionizedWorker to process asynchronously.
+  ^{:doc "Push a JobPlan to the master queue to process asynchronously.
           If it successfully pushes the JobPlan it will return the UUID associated
           with the JobPlan."}
   ([worker-name #^clojure.lang.PersistentVector args]
@@ -94,8 +95,8 @@
     (let [worker-name (:worker job-plan)
           registered-worker (workers-union/find-worker worker-name)]
     (if-not (nil? registered-worker)
-      (let [queue (:queue registered-worker)]
-        (redis/push queue (as-json job-plan))
+      (do
+        (redis/push keys-and-qs/master-queue-name (as-json job-plan))
         (:uuid job-plan))
       (throw (RuntimeException. (str worker-name " was not found in the worker registry.")))
       ))))

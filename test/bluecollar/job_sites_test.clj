@@ -21,8 +21,8 @@
 (deftest job-site-with-passing-job-plan-test
   (testing "that the job plan is passed to the foreman and the foreman dispatches work"
     (let [workers {:hard-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform
-                                                                 testing-queue-name
-                                                                 false)}
+                                                                    testing-queue-name
+                                                                    false)}
           _ (workers-union/register-workers workers)
           a-job-site (job-site/new-job-site testing-queue-name 5)
           _ (startup a-job-site)

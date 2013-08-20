@@ -3,21 +3,13 @@
    Use bluecollar.client to both setup a client application, but
    also send asynchronous jobs to registered workers.
 
-   In order to setup a bluecollar client application. Create a hash-map
-   containing the worker specifications, just as in bluecollar.core.
-   The value for each worker specification is a hash map containing 3 required things:
-    1.) The queue it should be placed on in order to be processed.
-    2.) The namespace and function it should execute when being processed.
-    3.) The ability to retry if the job given to the worker results in an exception.
+   In order to setup a bluecollar client application simply define a vector
+   of the known workers, similar to bluecollar.core.
 
   In this example there are 2 worker specifications:
 
-  => { :worker-one {:fn clojure.core/+, :queue \"high-importance\", :retry true}
-       :fibonacci-worker {:fn fibonacci/calc, :queue \"catch-all\", :retry false} }
-
    => (use 'bluecollar.client)
-   => (def worker-specs {:worker-one {:fn clojure.core/+, :queue \"high-importance\", :retry true}
-                         :fibonacci-worker {:fn fibonacci/calc, :queue \"catch-all\", :retry false}})
+   => (def worker-specs [:worker-one, :worker-two])
    => (bluecollar-client-setup worker-specs)
 
    After performing bluecollar-client-setup the application can begin using
@@ -62,9 +54,7 @@
                     :db (or redis-db 0)
                     :timeout (or redis-timeout 5000)})
     (doseq [[worker-name worker-defn] worker-specs]
-      (workers-union/register-worker worker-name
-                                (workers-union/new-unionized-worker (:queue worker-defn))
-                                ))))
+      (workers-union/register-worker worker-name (workers-union/new-unionized-worker)))))
 
 (defn bluecollar-client-teardown 
   ^{:doc "Teardown bluecollar for a client application"}

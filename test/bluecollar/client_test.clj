@@ -9,14 +9,11 @@
             [bluecollar.keys-and-queues :as keys-qs]
             [clj-time.core :as time]))
 
-(def worker-specs {:hard-worker {:fn bluecollar.fake-worker/counting, :queue "crunch-numbers", :retry false}
-                   :worker-two {:fn bluecollar.fake-worker/explode, :queue "low-importance", :retry true}} )
-
 (use-fixtures :each (fn [f]
   (reset! bluecollar.fake-worker/perform-called false)
   (workers-union/clear-registered-workers)
   (redis/shutdown)
-  (bluecollar-client-setup worker-specs {:redis-key-prefix "fleur-de-sel"})
+  (bluecollar-client-setup [:hard-worker :worker-two] {:redis-key-prefix "fleur-de-sel"})
   (redis/flushdb)
   (f)
   (bluecollar-client-teardown)))

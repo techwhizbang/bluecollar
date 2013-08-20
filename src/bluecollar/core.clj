@@ -56,7 +56,8 @@
   "
   (:use bluecollar.lifecycle
         bluecollar.properties)
-  (:require [bluecollar.job-sites :as job-site]
+  (:require [bluecollar.master-job-site :as master-job-site]
+            [bluecollar.job-sites :as job-site]
             [bluecollar.redis :as redis]
             [bluecollar.job-plans :as job-plans]
             [bluecollar.workers-union :as workers-union]
@@ -108,7 +109,7 @@
                                                                          (:retry worker-defn))))
     (processing-queue-recovery)
 
-    (reset! master-site (job-site/new-job-site keys-qs/master-queue-name 10))
+    (reset! master-site (master-job-site/new-master-job-site))
 
     (startup @master-site)
 

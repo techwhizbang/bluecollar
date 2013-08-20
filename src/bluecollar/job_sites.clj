@@ -8,6 +8,10 @@
 
 (defrecord JobSite [#^String site-name #^bluecollar.foreman.Foreman foreman continue-running])
 
+(defn- handler [this value]
+  (logger/info "JobSite" (:site-name this) "received a message " value)
+  (foreman/dispatch-work (:foreman this) (plan/from-json value)))
+
 (extend-type JobSite
   Lifecycle
   
@@ -19,10 +23,8 @@
       (while @(:continue-running this)
         (try
           (let [value (redis/blocking-pop (:site-name this))]
-            (if (and (not (nil? value)) (not (coll? value)))
-              (do
-                (logger/info "JobSite" (:site-name this) "received a message " value)
-                (foreman/dispatch-work (:foreman this) (plan/from-json value)))))
+            (if (and (not (nil? value)) (not (coll? value))) 
+              (handler this value)))
           (catch Exception ex
             (logger/error ex)))
       )))
@@ -35,3 +37,4 @@
 
 (defn new-job-site [site-name worker-count]
   (->JobSite site-name (foreman/new-foreman worker-count) (atom true)))
+
