@@ -8,8 +8,8 @@ Gem::Specification.new do |spec|
   spec.version       = Bluecollar::VERSION
   spec.authors       = ["Denny Quesada"]
   spec.email         = ["denny.quesada@bookrenter.com"]
-  spec.description   = %q{TODO: Bluecollar client written in Ruby}
-  spec.summary       = %q{TODO: Bluecollar client written in Ruby}
+  spec.description   = %q{Bluecollar client written in Ruby}
+  spec.summary       = %q{Bluecollar client written in Ruby}
   spec.homepage      = ""
   spec.license       = "MIT"
 
