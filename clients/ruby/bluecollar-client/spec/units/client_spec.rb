@@ -1,18 +1,17 @@
 require 'spec_helper'
 
 describe Bluecollar::Client do
-  # before do
-  #   Bluecollar::Client.instance = nil
-  # end
-  #
+
+  before do
+    Bluecollar::Client.configure(redis_key_prefix: "test_prefix",
+                                 redis_hostname: "test_hostname",
+                                 redis_port: 4567,
+                                 redis_db: 99,
+                                 redis_timeout: 1000)
+  end
+
   describe ".initialize" do
-    subject do
-      Bluecollar::Client.new(redis_key_prefix: "test_prefix",
-                             redis_hostname: "test_hostname",
-                             redis_port: 4567,
-                             redis_db: 99,
-                             redis_timeout: 1000)
-    end
+    subject { Bluecollar::Client.instance }
 
     its(:redis_key_prefix) { should == "test_prefix" }
     its(:redis_hostname) { should == "test_hostname" }
@@ -22,19 +21,19 @@ describe Bluecollar::Client do
   end
 
   describe "#processing_queue" do
-    subject { Bluecollar::Client.new(redis_key_prefix: "test_prefix").send(:processing_queue) }
+    subject { Bluecollar::Client.instance.send(:processing_queue) }
 
     it { should == "test_prefix:processing-queue:default" }
   end
 
   describe "#redis_connection" do
-    subject { Bluecollar::Client.new.send(:redis_connection) }
+    subject { Bluecollar::Client.instance.send(:redis_connection) }
 
     it { should be_a Redis }
   end
 
   describe "#redis_payload" do
-    subject { JSON.parse Bluecollar::Client.new.send(:redis_payload, 'lazy_worker', {arg1:"first"}) }
+    subject { JSON.parse Bluecollar::Client.instance.send(:redis_payload, 'lazy_worker', {arg1:"first"}) }
 
     it "should have the expected worker" do
       subject['worker'].should eq("lazy_worker")
@@ -45,11 +44,11 @@ describe Bluecollar::Client do
   end
 
   describe "#async_job_for" do
-    subject {  Bluecollar::Client.new }
+    subject {  Bluecollar::Client.instance }
 
     it "should push the data to the right queue" do
       payload = subject.send(:redis_payload, 'lazy_worker', {arg1:"first"})
-      queue = subject.send :redis_queue_name
+      queue = subject.send :processing_queue
       mock = double('redis')
       Bluecollar::Client.any_instance.stub(:redis_connection){ mock }
       mock.should_receive(:lpush).with(queue, payload)
