@@ -24,6 +24,8 @@ module Bluecollar
 
     def async_job_for(worker_name, args)
       redis_connection.lpush processing_queue, redis_payload(worker_name, args)
+    rescue Redis::BaseError => e
+      raise Bluecollar::ClientError.new("Error occured while attempting to lpush to redis #{e}:#{e.message}\nBacktrace:\n\t#{e.backtrace.join("\n\t")}")
     end
 
     private

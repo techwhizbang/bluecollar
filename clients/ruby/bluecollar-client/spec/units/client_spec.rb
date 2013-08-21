@@ -54,5 +54,19 @@ describe Bluecollar::Client do
       mock.should_receive(:lpush).with(queue, payload)
       subject.async_job_for('lazy_worker', {arg1:"first"})
     end
+
+    context "when a BaseError is raised" do
+      before do
+        mock = double('redis')
+        Bluecollar::Client.any_instance.stub(:redis_connection){ mock }
+        mock.should_receive(:lpush) { raise Redis::BaseError.new("BaseError") }
+      end
+
+      subject { Bluecollar::Client.instance.async_job_for('lazy_worker', {arg1:"first"}) }
+
+      it "should raise an error" do
+        expect { subject }.to raise_error(Bluecollar::ClientError)
+      end
+    end
   end
 end
