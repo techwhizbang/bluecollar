@@ -1,6 +1,6 @@
 # Bluecollar::Client
 
-TODO: Write a gem description
+The `Bluecollar::Client` is a ruby interface to `bluecollar.core`.
 
 ## Installation
 
