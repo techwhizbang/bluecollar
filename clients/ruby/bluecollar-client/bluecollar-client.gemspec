@@ -20,7 +20,6 @@ Gem::Specification.new do |spec|
 
   spec.add_runtime_dependency "redis"
   spec.add_runtime_dependency %q<json>
-  spec.add_runtime_dependency %q<activesupport>
   spec.add_development_dependency "bundler", "~> 1.3"
   spec.add_development_dependency "rake"
   spec.add_development_dependency %q<rspec>, ["~> 2.11.0"]

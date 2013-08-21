@@ -5,16 +5,19 @@ module Bluecollar
 
     class << self
 
-      attr_reader :configuration, :instance
+      attr_reader :configuration, :logger, :instance
 
       def configure(options = {})
-        client_options = HashWithIndifferentAccess.new(options)
+        @instance = nil
+
+        @logger = options[:logger] || Logger.new("/dev/null")
+
         @configuration = {}
-        @configuration[:redis_key_prefix] = client_options[:redis_key_prefix] || "bluecollar"
-        @configuration[:redis_hostname] = client_options[:redis_hostname] || "127.0.0.1"
-        @configuration[:redis_port] = (client_options[:redis_port] || 6379).to_i
-        @configuration[:redis_db] = client_options[:redis_db].to_i
-        @configuration[:redis_timeout] = (client_options[:redis_timeout] || 5000).to_i
+        @configuration[:redis_key_prefix] = options[:redis_key_prefix] || "bluecollar"
+        @configuration[:redis_hostname] = options[:redis_hostname] || "127.0.0.1"
+        @configuration[:redis_port] = (options[:redis_port] || 6379).to_i
+        @configuration[:redis_db] = options[:redis_db].to_i
+        @configuration[:redis_timeout] = (options[:redis_timeout] || 5000).to_i
       end
 
       def instance
@@ -25,7 +28,8 @@ module Bluecollar
     def async_job_for(worker_name, args)
       redis_connection.lpush processing_queue, redis_payload(worker_name, args)
     rescue Redis::BaseError => e
-      raise Bluecollar::ClientError.new("Error occured while attempting to lpush to redis #{e}:#{e.message}\nBacktrace:\n\t#{e.backtrace.join("\n\t")}")
+      Bluecollar::Client.logger.warn("Error while adding #{worker_name}: #{args.inspect} to queue.\n#{e}:#{e.message}\nBacktrace:\n\t#{e.backtrace.join("\n\t")}")
+      raise Bluecollar::ClientError.new("Error while adding #{worker_name}: #{args.inspect} to queue.\n#{e}:#{e.message}\nBacktrace:\n\t#{e.backtrace.join("\n\t")}")
     end
 
     private
@@ -35,12 +39,18 @@ module Bluecollar
     end
 
     def redis_payload(worker_name, args)
-      payload = { worker: worker_name, args: args }
-      JSON.dump(payload)
+      raise ArgumentError.new("args must be an Array.") unless args.is_a? Array
+
+      begin
+        payload = { worker: worker_name, args: args }
+        JSON.dump(payload)
+      rescue
+        raise Bluecollar::ClientError.new("Error while creating JSON payload for #{worker_name}: #{args.inpsect}.\n#{e}:#{e.message}\nBacktrace:\n\t#{e.backtrace.join("\n\t")}")
+      end
     end
 
     def processing_queue
-       @processing_queue ||= "#{self.redis_key_prefix}:processing-queue:default"
+      @processing_queue ||= "#{redis_key_prefix}:queues:master"
     end
 
     def redis_connection
