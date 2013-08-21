@@ -42,10 +42,10 @@ module Bluecollar
     end
 
     def redis_connection
-      @redis_connection ||= Redis.new(host: self.redis_hostname,
-                                      port: self.redis_port,
-                                      db: self.redis_db,
-                                      timeout: self.redis_timeout)
+      @redis_connection ||= Redis.new(host: redis_hostname,
+                                      port: redis_port,
+                                      db: redis_db,
+                                      timeout: redis_timeout)
     end
   end
 end
