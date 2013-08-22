@@ -23,19 +23,37 @@
   (reset! bluecollar.fake-worker/cnt-me 0)))
 
 (deftest processing-queue-recovery-test
+
+  (workers-union/register-worker :hard-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform "crunch-numbers" false))
+  (keys-qs/register-queues ["crunch-numbers"] nil)
+  (keys-qs/register-keys)
+
   (testing "recovers jobs uncompleted in the processing queue"
-    (workers-union/register-worker :hard-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform "crunch-numbers" false))
     (let [job-plan (plan/new-job-plan :hard-worker [])
           job-json (plan/as-json job-plan)
           _ (redis/push "crunch-numbers" job-json)
           _ (redis/blocking-pop "crunch-numbers")
           queue-cnt (count (redis/lrange "crunch-numbers" 0 0))
-          processing-cnt (count (redis/lrange "processing" 0 0))]
+          processing-cnt (count (redis/lrange keys-qs/processing-queue-name 0 0))]
           (is (= 0 queue-cnt))
           (is (= 1 processing-cnt))
-          (processing-queue-recovery)
+          (processing-queue-recovery keys-qs/processing-queue-name)
           (is (= 1 (count (redis/lrange "crunch-numbers" 0 0))))
-          (is (= 0 (count (redis/lrange "processing" 0 0))))
+          (is (= 0 (count (redis/lrange keys-qs/processing-queue-name 0 0))))
+          (is (= job-json (redis/blocking-pop "crunch-numbers")))))
+
+  (testing "recovers jobs uncompleted in the master processing queue"
+    (let [job-plan (plan/new-job-plan :hard-worker [])
+          job-json (plan/as-json job-plan)
+          _ (redis/push keys-qs/master-queue-name job-json)
+          _ (redis/blocking-pop keys-qs/master-queue-name keys-qs/master-processing-queue-name 2)
+          queue-cnt (count (redis/lrange keys-qs/master-queue-name 0 0))
+          processing-cnt (count (redis/lrange keys-qs/master-processing-queue-name 0 0))]
+          (is (= 0 queue-cnt))
+          (is (= 1 processing-cnt))
+          (processing-queue-recovery keys-qs/master-processing-queue-name)
+          (is (= 1 (count (redis/lrange "crunch-numbers" 0 0))))
+          (is (= 0 (count (redis/lrange keys-qs/master-processing-queue-name 0 0))))
           (is (= job-json (redis/blocking-pop "crunch-numbers"))))))
 
 (deftest bluecollar-setup-teardown-test
