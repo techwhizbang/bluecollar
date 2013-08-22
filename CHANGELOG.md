@@ -1,8 +1,9 @@
 # bluecollar changelog
 
-## 1.0.0-beta3 - TBD
+## 1.0.0-beta3 - Aug 13, 2013
 
 * Fixed bug where the user defined queue names are not being prefixed properly ie. queue-blah should be "bluecollar:queue-blah"
+* Fixed JETTY_PORT bug that was overriding a previously set System property defining the Jetty port
 
 ## 1.0.0-beta2 - July 16, 2013
 
