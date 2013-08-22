@@ -5,7 +5,7 @@
        compojure.core
        ring.adapter.jetty))
 
-(def worker-specs {:hard-worker {:queue "high-importance"}})
+(def worker-specs [:hard-worker])
 
 (defroutes app
   (GET "/" []

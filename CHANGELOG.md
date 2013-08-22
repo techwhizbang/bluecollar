@@ -1,5 +1,12 @@
 # bluecollar changelog
 
+## 1.0.0-beta4 - Aug 22, 2013
+
+* Implemented a master queue where all the job plan messages go initially, then they are distributed
+to their respective queues from there. This greatly simplifies and shields the client from knowing
+to much about what the workers are doing or what queue they work on. Now any bluecollar client can 
+push job plans to the master queue and the bluecollar.core server side takes care of the rest. 
+
 ## 1.0.0-beta3 - Aug 13, 2013
 
 * Fixed bug where the user defined queue names are not being prefixed properly ie. queue-blah should be "bluecollar:queue-blah"

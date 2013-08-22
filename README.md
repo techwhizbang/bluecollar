@@ -41,7 +41,7 @@ If you are using Maven, add the following repository definition to your `pom.xml
 With Leiningen:
 
 ``` clj
-[bluecollar/bluecollar "1.0.0-beta2"]
+[bluecollar/bluecollar "1.0.0-beta4"]
 ```
 
 With Maven:
@@ -50,7 +50,7 @@ With Maven:
 <dependency>
   <groupId>bluecollar</groupId>
   <artifactId>bluecollar</artifactId>
-  <version>1.0.0-beta2</version>
+  <version>1.0.0-beta4</version>
 </dependency>
 ```
 
@@ -98,10 +98,12 @@ In order to start using `bluecollar.client`:
 ```clj
 (use 'bluecollar.client)
 
-; worker-specs represents a mapping of workers and the queue they send work to
-; just like bluecollar.core
-(def worker-specs {:worker-one {:fn clojure.core/+, :queue "high-importance", :retry true}
-                   :fibonacci-worker {:fn fibonacci/calc, :queue "catch-all", :retry false}})
+; worker-specs are simpler on the client side. Anyone programming the client shouldn't
+; need to know what the workers do w/r/t to the functions they call or what queue they technically work ; on. The only point of specifying the worker-specs on the bluecollar client side is to keep the client
+; honest in case they accidentally mistyped the target worker when using the async-job-for function. 
+; In the scenario the client mistyped the target worker, bluecollar would throw an exception to inform
+; them they are sending a job plan to an unknown or unintended worker.
+(def worker-specs [:worker-one :fibonacci-worker])
 
 ; redis-specs represents the details of how to connect to Redis
 (def redis-specs {:redis-hostname "redis-master.my-awesome-app.com",
