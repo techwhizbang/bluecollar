@@ -103,11 +103,13 @@
 
 (defn- retry [job-plan]
   (let [uuid (:uuid job-plan)
+        worker-name (:worker job-plan)
+        registered-worker (workers-union/find-worker worker-name)
         failures (redis/failure-retry-cnt uuid)
         scheduled-runtime (str (time/plus (time/now) (time/secs (retry-delay failures))))
         scheduled-job-plan (assoc job-plan :scheduled-runtime scheduled-runtime)]
     (logger/info "retrying the JobPlan with UUID" uuid "at" scheduled-runtime)
-    (async-job-plan scheduled-job-plan)))
+    (redis/push (:queue registered-worker) (as-json scheduled-job-plan))))
 
 (defn on-failure 
   "Increment total job failures.

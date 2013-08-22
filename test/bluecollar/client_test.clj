@@ -36,14 +36,14 @@
 
 (deftest async-job-for-test
   (testing "successfully sends a job for a registered worker to process"
-    (is (nil? (redis/pop-to-processing "crunch-numbers")))
+    (is (nil? (redis/pop-to-processing "master")))
     (is (not (nil? (re-find uuid-regex (async-job-for :hard-worker [1 3])))))
-    (is (not (nil? (redis/pop-to-processing "crunch-numbers")))))
+    (is (not (nil? (redis/pop-to-processing "master")))))
 
   (testing "successfully sends a job with a scheduled runtime"
-    (is (nil? (redis/pop-to-processing "crunch-numbers")))
+    (is (nil? (redis/pop-to-processing "master")))
     (is (not (nil? (re-find uuid-regex (async-job-for :hard-worker [1 3] (str (time/now)))))))
-    (is (not (nil? (redis/pop-to-processing "crunch-numbers")))))
+    (is (not (nil? (redis/pop-to-processing "master")))))
   
   (testing "throws a RuntimeException when an unregistered worker is encountered"
     (let [_ (reset! bluecollar.workers-union/registered-workers {})]

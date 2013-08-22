@@ -6,6 +6,8 @@
   (:require [bluecollar.redis :as redis]
             [bluecollar.fake-worker]
             [bluecollar.workers-union :as workers-union]
+            [bluecollar.keys-and-queues :as keys-qs]
+            [bluecollar.master-job-site :as master-site]
             [bluecollar.job-sites :as job-site]
             [bluecollar.job-plans :as plan]
             [cheshire.core :as json]))
@@ -24,11 +26,16 @@
                                                                     testing-queue-name
                                                                     false)}
           _ (workers-union/register-workers workers)
+          _ (keys-qs/register-queues [testing-queue-name] nil)
+          _ (keys-qs/register-keys)
+          master-site (master-site/new-master-job-site)
           a-job-site (job-site/new-job-site testing-queue-name 5)
+          _ (startup master-site)
           _ (startup a-job-site)
           _ (Thread/sleep 1000)
-          _ (async-job-for :hard-worker [3 2])
+          _ (async-job-for :hard-worker [{"jobsite" "test"} [1 2 3]])
           _ (Thread/sleep 3000) ; wait for the job plan to be completed
+          _ (shutdown master-site)
           _ (shutdown a-job-site)
           _ (Thread/sleep 2000) ; wait for shutdown to complete
           in-processing-vals (redis/lrange "processing" 0 0)]
@@ -40,15 +47,20 @@
   (testing "a failing worker is retried the maximum number of times without crashing the process"
     (let [_ (reset! plan/delay-base 1)
           workers {:failing-worker (workers-union/new-unionized-worker bluecollar.fake-worker/explode
-                                                                    testing-queue-name
-                                                                    true)}
+                                                                       testing-queue-name
+                                                                       true)}
           _ (workers-union/register-workers workers)
+          _ (keys-qs/register-queues [testing-queue-name] nil)
+          _ (keys-qs/register-keys)
+          master-site (master-site/new-master-job-site)
           a-job-site (job-site/new-job-site testing-queue-name 5)
+          _ (startup master-site)
           _ (startup a-job-site)
           _ (Thread/sleep 1000) 
           _ (async-job-for :failing-worker [])
           _ (Thread/sleep 3000) ; wait for all of the job plans to complete
-          _ (shutdown a-job-site)
+          _ (shutdown master-site)
+          _ (shutdown a-job-site)          
           _ (Thread/sleep 2000)] ; wait for shutdown to complete
       (is (= 25 (deref bluecollar.fake-worker/fake-worker-failures)))
       )))
@@ -57,20 +69,25 @@
   (testing "a failing worker is retried the maximum number of times without crashing the process"
     (let [_ (reset! plan/delay-base 1)
           workers {:worker-one (workers-union/new-unionized-worker bluecollar.fake-worker/counting
-                                                                "queue 1"
-                                                                true)
+                                                                   "queue 1"
+                                                                   true)
                    :worker-two (workers-union/new-unionized-worker bluecollar.fake-worker/counting
-                                                                "queue 2"
-                                                                true)}
+                                                                   "queue 2"
+                                                                   true)}
           _ (workers-union/register-workers workers)
+          _ (keys-qs/register-queues ["queue 1" "queue 2"] nil)
+          _ (keys-qs/register-keys)
+          master-site (master-site/new-master-job-site)
           job-site-1 (job-site/new-job-site "queue 1" 5)
           job-site-2 (job-site/new-job-site "queue 2" 5)
+          _ (startup master-site)
           _ (startup job-site-1)
           _ (startup job-site-2)
           _ (Thread/sleep 1000) 
           _ (async-job-for :worker-one [])
           _ (async-job-for :worker-two [])
           _ (Thread/sleep 3000) ; wait for all of the job plans to complete
+          _ (shutdown master-site)
           _ (shutdown job-site-1)
           _ (shutdown job-site-2)
           _ (Thread/sleep 2000)] ; wait for shutdown to complete

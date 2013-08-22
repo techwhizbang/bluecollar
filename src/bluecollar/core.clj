@@ -122,11 +122,13 @@
   "Shut down bluecollar"
   []
   (logger/info "Bluecollar is being torn down...")
-  (if-not (empty? @job-sites)
+  (if-not (empty? @master-site)
     (do
       (shutdown @master-site)
-      (reset! master-site nil)
+      (reset! master-site nil)))
+  (if-not (empty? @job-sites)
+    (do
       (doseq [site @job-sites] (shutdown site))
-      (reset! workers-union/registered-workers {})
-      (reset! job-sites [])
-      (redis/shutdown))))
+      (reset! job-sites [])))
+  (reset! workers-union/registered-workers {})
+  (redis/shutdown))

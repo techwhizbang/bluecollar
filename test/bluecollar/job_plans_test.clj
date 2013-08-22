@@ -6,6 +6,7 @@
             [bluecollar.job-plans :as plan]
             [bluecollar.redis :as redis]
             [bluecollar.workers-union :as workers-union]
+            [bluecollar.keys-and-queues :as keys-qs]
             [bluecollar.fake-worker]))
 
 (use-fixtures :each (fn [f]
@@ -114,8 +115,8 @@
 (deftest retry-on-failure-test
   (testing "returns false if the registered worker is not retryable"
     (let [workers {:hard-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform
-                                                                 "crunch-numbers"
-                                                                 false)}
+                                                                    "crunch-numbers"
+                                                                    false)}
           _ (workers-union/register-workers workers)
           job-plan (plan/new-job-plan :hard-worker [1 2])]
       (stubbing [redis/failure-retry-cnt (- (deref plan/maximum-failures) 1)]
@@ -123,8 +124,8 @@
 
   (testing "returns false if the number of failures is above the threshold"
     (let [workers {:hard-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform
-                                                                 "crunch-numbers"
-                                                                 true)}
+                                                                    "crunch-numbers"
+                                                                    true)}
           _ (workers-union/register-workers workers)
           job-plan (plan/new-job-plan :hard-worker [1 2])]
       (stubbing [redis/failure-retry-cnt (+ (deref plan/maximum-failures) 1)]
@@ -132,8 +133,8 @@
 
   (testing "returns true if the registered worker is retryable and failures are below the threshold"
     (let [workers {:hard-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform
-                                                                 "crunch-numbers"
-                                                                 true)}
+                                                                    "crunch-numbers"
+                                                                    true)}
           _ (workers-union/register-workers workers)
           job-plan (plan/new-job-plan :hard-worker [1 2])]
       (stubbing [redis/failure-retry-cnt (- (deref plan/maximum-failures) 1)]
@@ -146,20 +147,22 @@
       (stubbing [plan/retry-on-failure? true
                  time/now now-ish]
         (let [workers {:hard-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform
-                                                                     "crunch-numbers"
-                                                                    true)}
-              _ (workers-union/register-workers workers)
+                                                                        "crunch-numbers"
+                                                                        true)}
               job-plan-original (plan/new-job-plan :hard-worker [123])
-              job-plan-to-retry (assoc job-plan-original :scheduled-runtime (str (time/plus now-ish (time/secs (deref plan/delay-base)))))  
-              _ (plan/on-failure job-plan-original)]
+              job-plan-to-retry (assoc job-plan-original :scheduled-runtime (str (time/plus now-ish (time/secs (deref plan/delay-base)))))]
+          (workers-union/register-workers workers)
+          (keys-qs/register-keys)
+          (keys-qs/register-queues ["crunch-numbers"] nil)
+          (plan/on-failure job-plan-original)
           (is (= job-plan-to-retry (plan/from-json (redis/pop-to-processing "crunch-numbers"))))
           (is (not (nil? (redis/remove-from-processing (plan/as-json job-plan-to-retry)))))
           ))))
 
   (testing "does not re-enqueue the job plan when the worker does not allow retries"
     (let [workers {:hard-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform
-                                                                 "crunch-numbers"
-                                                                 false)}
+                                                                    "crunch-numbers"
+                                                                    false)}
           _ (workers-union/register-workers workers)
           job-plan (plan/new-job-plan :hard-worker [123])
           _ (plan/on-failure job-plan)]

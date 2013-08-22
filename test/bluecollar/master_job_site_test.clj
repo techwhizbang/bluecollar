@@ -18,24 +18,19 @@
   (reset! bluecollar.fake-worker/fake-worker-failures 0)
   (f)))
 
-(deftest master-job-site-startup-test
-  (testing "it starts and stops cleanly"
-    (let [master-job-site (new-master-job-site)]
-      (startup master-job-site)
-      (shutdown master-job-site))))
-
 (deftest master-job-site-queue-test
   (testing "pops a job plan from the master queue, places it into intended queue, clears master processing queue"
     (let [workers {:hard-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform
-                                                                    testing-queue-name
+                                                                    "intended-queue"
                                                                     false)}
           master-job-site (new-master-job-site)]
-      (keys-qs/register-queues [] nil)
+      (keys-qs/register-queues ["intended-queue"] nil)
+      (keys-qs/register-keys)
       (workers-union/register-workers workers)
-      (startup master-job-site)
-      (let [uuid (async-job-for :hard-worker [1 2 3])]      
-        (Thread/sleep 1000)
-        (is (= uuid (:uuid (plan/from-json (redis/rpop testing-queue-name)))))
+      (let [uuid (async-job-for :hard-worker [{"mastersite" "test"} 2])]      
+        (startup master-job-site)
+        (Thread/sleep 2000)
+        (is (= uuid (:uuid (plan/from-json (redis/rpop "intended-queue")))))
         (is (nil? (redis/rpop keys-qs/master-processing-queue-name))))
       (shutdown master-job-site)
       )))

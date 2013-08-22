@@ -53,7 +53,7 @@
                     :port (or redis-port 6379)
                     :db (or redis-db 0)
                     :timeout (or redis-timeout 5000)})
-    (doseq [[worker-name worker-defn] worker-specs]
+    (doseq [worker-name worker-specs]
       (workers-union/register-worker worker-name (workers-union/new-unionized-worker)))))
 
 (defn bluecollar-client-teardown 
