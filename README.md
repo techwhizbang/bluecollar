@@ -7,7 +7,7 @@
 
 ## What is it?
 
-The aim of `bluecollar` is to provide a simple yet fully featured distributed background processing solution written in Clojure.  
+The aim of `bluecollar` is to provide a simple yet full featured distributed background processing solution written in Clojure.  
   
 <br/><br/><br/>
       
