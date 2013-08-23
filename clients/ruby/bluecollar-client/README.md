@@ -1,6 +1,6 @@
 # Bluecollar::Client
 
-The `Bluecollar::Client` is a ruby interface to `bluecollar.core`.
+The `Bluecollar::Client` is a ruby interface to [bluecollar.core](https://github.com/techwhizbang/bluecollar).
 
 ## Installation
 
@@ -44,3 +44,11 @@ Bluecollar::Client.instance.async_job_for(worker_name, args_hash)
 3. Commit your changes (`git commit -am 'Add some feature'`)
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
+
+## License
+
+Copyright (c) 2013 Denny Quesada
+
+Distributed under the Eclipse Public License.
+http://www.eclipse.org/legal/epl-v10.html
+
