@@ -57,7 +57,7 @@ With Maven:
 ## Usage
 
 Take a look at the [Quick Start](https://github.com/techwhizbang/bluecollar/wiki/Quick-Start) 
-or the peruse the [Wiki](https://github.com/techwhizbang/bluecollar/wiki) to begin using `bluecollar`.
+or peruse the [Wiki](https://github.com/techwhizbang/bluecollar/wiki) to begin using `bluecollar`.
 
 
 ## Example Application
