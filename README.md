@@ -56,69 +56,9 @@ With Maven:
 
 ## Usage
 
-### bluecollar.core
+Take a look at the [Quick Start](https://github.com/techwhizbang/bluecollar/wiki/Quick-Start) 
+or the peruse the [Wiki](https://github.com/techwhizbang/bluecollar/wiki) to begin using `bluecollar`.
 
-`bluecollar.core` is intended to act as the server side component where the actual heavy duty
-processing occurs. Insert `bluecollar.core` to the area of your application 
-where bootstrapping and start up occurs.
-
-In order to start `bluecollar.core`:
-```clj
-(use 'bluecollar.core)
-
-; queue-specs represents the name of the queues and how many "worker" threads are assigned to each
-(def queue-specs {"high-importance" 10 "medium-importance" 5 "catch-all" 5})
-
-; worker-specs represents a mapping of workers and the functions they are assigned to execute,
-; the queue they gather work from, and if on failure whether they should retry
-(def worker-specs {:worker-one {:fn clojure.core/+, :queue "high-importance", :retry true}
-                   :fibonacci-worker {:fn fibonacci/calc, :queue "catch-all", :retry false}})
-
-; redis-specs represents the details of how to connect to Redis
-(def redis-specs {:redis-hostname "redis-master.my-awesome-app.com",
-                  :redis-port 1234,
-                  :redis-db 6,
-                  :redis-timeout 6000})  
-
-(bluecollar-setup queue-specs worker-specs redis-specs)
-```
-
-In order to safely teardown `bluecollar.core`:
-```clj
-(use 'bluecollar.core)
-(bluecollar-teardown)
-```
-
-### bluecollar.client
-
-`bluecollar.client` is intended to act as a lightweight interface to `bluecollar.core`. It basically pushes job messages to Redis that are picked up and processed by `bluecollar.core`.
-
-In order to start using `bluecollar.client`:
-
-```clj
-(use 'bluecollar.client)
-
-; worker-specs are simpler on the client side. Anyone programming the client shouldn't
-; need to know what the workers do w/r/t to the functions they call or what queue they technically work ; on. The only point of specifying the worker-specs on the bluecollar client side is to keep the client
-; honest in case they accidentally mistyped the target worker when using the async-job-for function. 
-; In the scenario the client mistyped the target worker, bluecollar would throw an exception to inform
-; them they are sending a job plan to an unknown or unintended worker.
-(def worker-specs [:worker-one :fibonacci-worker])
-
-; redis-specs represents the details of how to connect to Redis
-(def redis-specs {:redis-hostname "redis-master.my-awesome-app.com",
-                  :redis-port 1234,
-                  :redis-db 6,
-                  :redis-timeout 6000}) 
-
-(bluecollar-client-setup worker-specs redis-specs)
-```
-
-It is simple to start sending jobs to the workers:
-
-```clj
-(async-job-for :fibonacci-worker [20])
-```
 
 ## Example Application
 
