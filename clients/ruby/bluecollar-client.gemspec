@@ -7,7 +7,7 @@ Gem::Specification.new do |spec|
   spec.name          = "bluecollar-client"
   spec.version       = Bluecollar::VERSION
   spec.authors       = ["Denny Quesada", "Nick Zalabak"]
-  spec.email         = ["denny.quesada@bookrenter.com", "techwhizbang@gmail.com"]
+  spec.email         = ["denny.quesada@gmail.com", "techwhizbang@gmail.com"]
   spec.description   = %q{Bluecollar client written in Ruby}
   spec.summary       = %q{Bluecollar client written in Ruby}
   spec.homepage      = ""
