@@ -111,11 +111,11 @@
     (processing-queue-recovery keys-qs/master-processing-queue-name)
     (processing-queue-recovery keys-qs/processing-queue-name)
 
-    (reset! master-queue (master/new-master-queue))
+    (reset! master-queue (master/new-master-queue (get queue-specs "master" 1)))
 
     (startup @master-queue)
 
-    (doseq [[queue-name pool-size] queue-specs]
+    (doseq [[queue-name pool-size] (dissoc queue-specs "master")]
       (swap! foremen conj (foreman/new-foreman queue-name pool-size)))
 
     (doseq [a-foreman @foremen] (startup a-foreman))))

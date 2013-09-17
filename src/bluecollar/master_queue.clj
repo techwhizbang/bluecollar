@@ -7,7 +7,7 @@
             [cheshire.core :as json]
             [clojure.tools.logging :as logger]))
 
-(defrecord MasterQueue [continue-running])
+(defrecord MasterQueue [worker-count continue-running])
 
 (defn- handler [value]
   (if (and (not (nil? value)) (not (coll? value)))
@@ -23,21 +23,24 @@
   
   (startup [this] 
     (logger/info "Starting the MasterQueue")
-    (future
-      (let [new-redis-conn (redis/new-connection)]
-        (while @(:continue-running this)
-          (try
-            (let [queue keys-qs/master-queue-name
-                  processing-queue keys-qs/master-processing-queue-name]
-              (handler (redis/blocking-pop queue processing-queue 1 new-redis-conn)))
-            (catch Exception ex
-              (logger/error ex)))))
-      ))
+    
+    (dotimes [x (:worker-count this)]
+      (future
+        (let [new-redis-conn (redis/new-connection)]
+          (while @(:continue-running this)
+            (try
+              (let [queue keys-qs/master-queue-name
+                    processing-queue keys-qs/master-processing-queue-name]
+                (handler (redis/blocking-pop queue processing-queue 1 new-redis-conn)))
+              (catch Exception ex
+                (logger/error ex))))))
+    ))
 
   (shutdown [this]
     (logger/info "Stopping the MasterQueue")
     (reset! (:continue-running this) false)
     ))
 
-(defn new-master-queue []
-  (->MasterQueue (atom true)))
+(defn new-master-queue 
+  ([] (new-master-queue 1))
+  ([worker-count] (->MasterQueue worker-count (atom true))))

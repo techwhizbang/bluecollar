@@ -17,7 +17,7 @@
   (require [example-app.worker]))
 
 (def worker-specs {:hard-worker {:fn example-app.worker/heavy-lifting, :queue "high-importance", :retry true}})
-(def queue-specs {"high-importance" 25})
+(def queue-specs {"high-importance" 25 "master" 25})
 
 (defroutes app
   (GET "/" []
