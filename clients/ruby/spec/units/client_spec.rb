@@ -65,6 +65,10 @@ describe Bluecollar::Client do
 
   describe "#redis_payload" do
     context "with valid arguments" do
+      before do
+        SecureRandom.stub(:uuid).and_return("UUID")
+      end
+
       subject { JSON.parse Bluecollar::Client.instance.send(:redis_payload, 'lazy_worker', [{arg1:"first"}]) }
 
       it "should have the expected worker" do
@@ -73,6 +77,14 @@ describe Bluecollar::Client do
 
       it "should have the expected args" do
         subject['args'].first['arg1'].should eq("first")
+      end
+
+      it "should have the expected UUID" do
+        subject['uuid'].should eq("UUID")
+      end
+
+      it "should have the expected scheduled-runtime" do
+        subject['scheduled-runtime'].should eq(nil)
       end
     end
 
@@ -86,6 +98,10 @@ describe Bluecollar::Client do
   end
 
   describe "#async_job_for" do
+    before do
+      SecureRandom.stub(:uuid).and_return("UUID")
+    end
+
     subject {  Bluecollar::Client.instance }
 
     it "should push the data to the right queue" do

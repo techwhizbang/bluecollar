@@ -42,7 +42,7 @@ module Bluecollar
       raise ArgumentError.new("args must be an Array.") unless args.is_a? Array
 
       begin
-        payload = { worker: worker_name, args: args }
+        payload = { "worker" => worker_name, "args" => args, "uuid" => SecureRandom.uuid, "scheduled-runtime" => nil }
         JSON.dump(payload)
       rescue
         raise Bluecollar::ClientError.new("Error while creating JSON payload for #{worker_name}: #{args.inpsect}.\n#{e}:#{e.message}\nBacktrace:\n\t#{e.backtrace.join("\n\t")}")
