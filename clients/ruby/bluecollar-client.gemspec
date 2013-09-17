@@ -11,7 +11,7 @@ Gem::Specification.new do |spec|
   spec.description   = %q{Bluecollar client written in Ruby}
   spec.summary       = %q{Bluecollar client written in Ruby}
   spec.homepage      = ""
-  spec.license       = "Distributed under the Eclipse Public License. http://www.eclipse.org/legal/epl-v10.html"
+  spec.license       = "EPL-V10"
 
   spec.files         = `git ls-files`.split($/)
   spec.executables   = spec.files.grep(%r{^bin/}) { |f| File.basename(f) }
