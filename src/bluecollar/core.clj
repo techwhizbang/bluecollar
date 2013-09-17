@@ -56,16 +56,16 @@
   "
   (:use bluecollar.lifecycle
         bluecollar.properties)
-  (:require [bluecollar.master-job-site :as master-job-site]
-            [bluecollar.job-sites :as job-site]
+  (:require [bluecollar.master-queue :as master]
+            [bluecollar.foreman :as foreman]
             [bluecollar.redis :as redis]
             [bluecollar.job-plans :as job-plans]
             [bluecollar.workers-union :as workers-union]
             [bluecollar.keys-and-queues :as keys-qs]
             [clojure.tools.logging :as logger]))
 
-(def job-sites (atom []))
-(def master-site (atom nil))
+(def foremen (atom []))
+(def master-queue (atom nil))
 
 (defn processing-queue-recovery
   "Recovers job plans in the processing queue and places them at the front of their appropriate queue."
@@ -111,26 +111,26 @@
     (processing-queue-recovery keys-qs/master-processing-queue-name)
     (processing-queue-recovery keys-qs/processing-queue-name)
 
-    (reset! master-site (master-job-site/new-master-job-site))
+    (reset! master-queue (master/new-master-queue))
 
-    (startup @master-site)
+    (startup @master-queue)
 
     (doseq [[queue-name pool-size] queue-specs]
-      (swap! job-sites conj (job-site/new-job-site queue-name pool-size)))
+      (swap! foremen conj (foreman/new-foreman queue-name pool-size)))
 
-    (doseq [site @job-sites] (startup site))))
+    (doseq [a-foreman @foremen] (startup a-foreman))))
 
 (defn bluecollar-teardown
   "Shut down bluecollar"
   []
   (logger/info "Bluecollar is being torn down...")
-  (if-not (empty? @master-site)
+  (if-not (empty? @master-queue)
     (do
-      (shutdown @master-site)
-      (reset! master-site nil)))
-  (if-not (empty? @job-sites)
+      (shutdown @master-queue)
+      (reset! master-queue nil)))
+  (if-not (empty? @foremen)
     (do
-      (doseq [site @job-sites] (shutdown site))
-      (reset! job-sites [])))
+      (doseq [a-foreman @foremen] (shutdown a-foreman))
+      (reset! foremen [])))
   (reset! workers-union/registered-workers {})
   (redis/shutdown))

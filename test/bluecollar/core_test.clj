@@ -60,10 +60,10 @@
   (testing "can successfully setup and teardown the bluecollar environment"
     (bluecollar-setup queue-specs worker-specs)
     (Thread/sleep 1000)
-    ; check that the master JobSite is there
-    (is (not (nil? @master-site)))
-    ; check that there are the correct number of JobSites
-    (is (= (count (keys queue-specs)) (count @job-sites)))
+    ; check that the MasterQueue is there
+    (is (not (nil? @master-queue)))
+    ; check that there are the correct number of Foreman
+    (is (= (count (keys queue-specs)) (count @foremen)))
     ; send some work that should be processed on successful startup
     (async-job-for :worker-one [])
     (async-job-for :worker-two [])
@@ -74,10 +74,10 @@
     ; tear it down
     (bluecollar-teardown)
     (Thread/sleep 1000)
-    ; ensure the master JobSite is nil
-    (is (nil? @master-site))
-    ; ensure the JobSites are empty
-    (is (empty? @job-sites))
+    ; ensure the MasterQueue is nil
+    (is (nil? @master-queue))
+    ; ensure the Foreman are empty
+    (is (empty? @foremen))
     ; send more work but it won't get processed
     (is (thrown-with-msg? RuntimeException #":worker-one was not found in the worker registry." (async-job-for :worker-one [])))
     (is (thrown-with-msg? RuntimeException #":worker-two was not found in the worker registry." (async-job-for :worker-two [])))

@@ -1,4 +1,4 @@
-(ns bluecollar.master-job-site
+(ns bluecollar.master-queue
   (:use bluecollar.lifecycle)
   (:require [bluecollar.redis :as redis]
             [bluecollar.job-plans :as plan]
@@ -7,7 +7,7 @@
             [cheshire.core :as json]
             [clojure.tools.logging :as logger]))
 
-(defrecord MasterJobSite [continue-running])
+(defrecord MasterQueue [continue-running])
 
 (defn- handler [value]
   (if (and (not (nil? value)) (not (coll? value)))
@@ -18,11 +18,11 @@
       (redis/remove-from-processing value keys-qs/master-processing-queue-name)
       )))
 
-(extend-type MasterJobSite
+(extend-type MasterQueue
   Lifecycle
   
   (startup [this] 
-    (logger/info "Starting the MasterJobSite")
+    (logger/info "Starting the MasterQueue")
     (future
       (let [new-redis-conn (redis/new-connection)]
         (while @(:continue-running this)
@@ -35,9 +35,9 @@
       ))
 
   (shutdown [this]
-    (logger/info "Stopping the MasterJobSite")
+    (logger/info "Stopping the MasterQueue")
     (reset! (:continue-running this) false)
     ))
 
-(defn new-master-job-site []
-  (->MasterJobSite (atom true)))
+(defn new-master-queue []
+  (->MasterQueue (atom true)))
