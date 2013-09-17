@@ -1,4 +1,4 @@
-(defproject bluecollar/bluecollar "1.0.0-beta5-SNAPSHOT"
+(defproject bluecollar/bluecollar "1.0.0-beta5"
   :description "Bluecollar: a simple yet full featured distributed background processing solution written in Clojure."
   :url "http://github.com/techwhizbang/bluecollar"
   :license {:name "Eclipse Public License"

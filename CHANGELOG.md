@@ -1,5 +1,9 @@
 # bluecollar changelog
 
+## 1.0.0-beta5 - Sept 17, 2013
+
+* Addressing a Redis CPU load problem due to the use of LREM when the processing queues were getting extremely large. The way work is "polled" has been improved to match exactly the number of pooled workers allocated which in turn makes the processing queue only as large as the worker pool. 
+
 ## 1.0.0-beta4 - Aug 22, 2013
 
 * Implemented a master queue where all the job plan messages go initially, then they are distributed
