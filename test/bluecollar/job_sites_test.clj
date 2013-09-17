@@ -66,7 +66,7 @@
       )))
 
 (deftest multi-job-sites-test
-  (testing "a failing worker is retried the maximum number of times without crashing the process"
+  (testing "same worker fn on separate queues"
     (let [_ (reset! plan/delay-base 1)
           workers {:worker-one (workers-union/new-unionized-worker bluecollar.fake-worker/counting
                                                                    "queue 1"
@@ -86,7 +86,7 @@
           _ (Thread/sleep 1000) 
           _ (async-job-for :worker-one [])
           _ (async-job-for :worker-two [])
-          _ (Thread/sleep 3000) ; wait for all of the job plans to complete
+          _ (Thread/sleep 1000) ; wait for all of the job plans to complete
           _ (shutdown master-site)
           _ (shutdown job-site-1)
           _ (shutdown job-site-2)
@@ -102,5 +102,5 @@
     (testing "has a foreman"
       (is (instance? bluecollar.foreman.Foreman (:foreman job-site))))
 
-    (testing "has a site-name"
-      (is (= "the name" (:site-name job-site))))))
+    (testing "has a queue-name"
+      (is (= "the name" (:queue-name job-site))))))

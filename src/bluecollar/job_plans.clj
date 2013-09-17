@@ -132,7 +132,7 @@
         worker-fn (:func registered-worker)
         uuid (:uuid job-plan)
         args (:args job-plan)]
-    (fn [] 
+    (fn job-fn [] 
       (try
         (logger/info "executing a JobPlan with UUID:" uuid "for worker" worker-name)
         (let [worker-start-time (time/now)]

@@ -7,6 +7,11 @@
 
 (def pool-and-settings (atom nil))
 
+(def config (atom {}))
+
+(defn set-config [redis-configs]
+  (reset! config redis-configs))
+
 (defmacro with-redis-conn [redis-connection & body]
   `(redis-client/with-conn (:pool ~redis-connection) (:settings ~redis-connection) ~@body))
 
@@ -23,14 +28,15 @@
 (defn redis-pool []
   (redis-client/make-conn-pool))
 
-(defn startup [config]
-  (reset! pool-and-settings
-    (->RedisConnection (redis-pool) (redis-settings config))))
+(defn startup
+  ([] (startup @config))
+  ([config] (reset! pool-and-settings (->RedisConnection (redis-pool) (redis-settings config)))))
 
 (defn ping [] (with-redis-conn @pool-and-settings (redis-client/ping)))
 
-(defn new-connection [config]
-  (->RedisConnection (redis-pool) (redis-settings config)))
+(defn new-connection 
+  ([] (new-connection @config))
+  ([config] (->RedisConnection (redis-pool) (redis-settings config))))
 
 (defn shutdown []
   (reset! pool-and-settings nil))

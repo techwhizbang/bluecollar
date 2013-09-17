@@ -98,10 +98,11 @@
     (keys-qs/setup-prefix redis-key-prefix)
     (keys-qs/register-queues (keys queue-specs) instance-name)
     (keys-qs/register-keys)
-    (redis/startup {:host (or redis-hostname "127.0.0.1")
-                    :port (or redis-port 6379)
-                    :db (or redis-db 0)
-                    :timeout (or redis-timeout 5000)})
+    (redis/set-config {:host (or redis-hostname "127.0.0.1")
+                       :port (or redis-port 6379)
+                       :db (or redis-db 0)
+                       :timeout (or redis-timeout 5000)})
+    (redis/startup)
     (doseq [[worker-name worker-defn] worker-specs]
       (workers-union/register-worker worker-name
                                      (workers-union/new-unionized-worker (:fn worker-defn)

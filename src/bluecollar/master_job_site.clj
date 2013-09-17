@@ -24,14 +24,15 @@
   (startup [this] 
     (logger/info "Starting the MasterJobSite")
     (future
-      (while @(:continue-running this)
-        (try
-          (let [queue keys-qs/master-queue-name
-                processing-queue keys-qs/master-processing-queue-name]
-            (handler (redis/blocking-pop queue processing-queue 2)))
-          (catch Exception ex
-            (logger/error ex)))
-      )))
+      (let [new-redis-conn (redis/new-connection)]
+        (while @(:continue-running this)
+          (try
+            (let [queue keys-qs/master-queue-name
+                  processing-queue keys-qs/master-processing-queue-name]
+              (handler (redis/blocking-pop queue processing-queue 1 new-redis-conn)))
+            (catch Exception ex
+              (logger/error ex)))))
+      ))
 
   (shutdown [this]
     (logger/info "Stopping the MasterJobSite")

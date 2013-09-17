@@ -6,35 +6,21 @@
             [cheshire.core :as json]
             [clojure.tools.logging :as logger]))
 
-(defrecord JobSite [#^String site-name #^bluecollar.foreman.Foreman foreman continue-running])
-
-(defn- handler [this value]
-  (logger/info "JobSite" (:site-name this) "received a message " value)
-  (foreman/dispatch-work (:foreman this) (plan/from-json value)))
+(defrecord JobSite [#^String queue-name #^bluecollar.foreman.Foreman foreman])
 
 (extend-type JobSite
   Lifecycle
   
   (startup [this] 
-    (logger/info "Starting JobSite: " (:site-name this))
+    (logger/info "Starting JobSite: " (:queue-name this))
     (logger/info "The JobSite Foreman is " (:foreman this))
-    (startup (:foreman this))    
-    (future
-      (while @(:continue-running this)
-        (try
-          (let [value (redis/blocking-pop (:site-name this))]
-            (if (and (not (nil? value)) (not (coll? value))) 
-              (handler this value)))
-          (catch Exception ex
-            (logger/error ex)))
-      )))
+    (startup (:foreman this)))
 
   (shutdown [this]
-    (logger/info "Stopping JobSite: " (:site-name this))
-    (reset! (:continue-running this) false)
+    (logger/info "Stopping JobSite: " (:queue-name this))
     (shutdown (:foreman this))
     ))
 
-(defn new-job-site [site-name worker-count]
-  (->JobSite site-name (foreman/new-foreman worker-count) (atom true)))
+(defn new-job-site [queue-name worker-count]
+  (->JobSite queue-name (foreman/new-foreman queue-name worker-count)))
 
