@@ -132,7 +132,36 @@
   ([queue-name] (rpop queue-name @pool-and-settings))
   ([queue-name redis-conn] (with-redis-conn redis-conn (redis-client/rpop (keys-qs/fetch-queue queue-name)))))
 
-(defn brpop-no-conn
+(defn setex
+  "Sets a key value with an expiration."
+  ([k v expiry] (setex k v expiry @pool-and-settings))
+  ([k v expiry redis-conn] (with-redis-conn redis-conn (redis-client/setex k expiry v))))
+
+(defn del
+  "Deletes a key."
+  ([k] (del k @pool-and-settings))
+  ([k redis-conn] (with-redis-conn redis-conn (redis-client/del k))))
+
+(defn get-key
+  "Gets a key."
+  ([k] (get-key k @pool-and-settings))
+  ([k redis-conn] (with-redis-conn redis-conn (redis-client/get k))))
+
+(defn sadd 
+  "Adds an item to a set" 
+  ([a-set item] (sadd a-set item @pool-and-settings))
+  ([a-set item redis-conn] (with-redis-conn redis-conn (redis-client/sadd a-set item))))
+
+(defn srem
+  "Removes an item from a set"
+  ([a-set item] (srem a-set item @pool-and-settings))
+  ([a-set item redis-conn] (with-redis-conn redis-conn (redis-client/srem a-set item))))
+
+(defn smember? 
+  ([a-set item] (smember? a-set item @pool-and-settings))
+  ([a-set item redis-conn] (> (with-redis-conn redis-conn (redis-client/sismember a-set item)) 0)))
+
+(defn brpop
   "Pops a value from the tail of the queue."
   ([queue-name] (redis-client/brpop (keys-qs/fetch-queue queue-name) 2)))
 
