@@ -162,8 +162,10 @@
   ([a-set item redis-conn] (> (with-redis-conn redis-conn (redis-client/sismember a-set item)) 0)))
 
 (defn brpop
-  "Pops a value from the tail of the queue."
-  ([queue-name] (redis-client/brpop (keys-qs/fetch-queue queue-name) 2)))
+  "Blocking operation that pops a value from the tail of the queue."
+  ([queue-name] (brpop queue-name 2))
+  ([queue-name timeout] (brpop queue-name timeout @pool-and-settings))
+  ([queue-name timeout redis-conn] (second (with-redis-conn redis-conn (redis-client/brpop (keys-qs/fetch-queue queue-name) 2)))))
 
 (defn pop-to-processing
   "Pops a value from the queue and places the value into the processing queue."
