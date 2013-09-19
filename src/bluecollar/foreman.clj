@@ -23,23 +23,27 @@
       (dispatch-scheduled-worker a-foreman job-plan)
       (apply (plan/as-runnable job-plan) [])))
 
+(defn- on-receipt-handler [a-foreman job-plan-json]
+  (if (and (not (nil? job-plan-json)) (not (coll? job-plan-json)))
+    (let [queue (:queue-name a-foreman)
+          job-plan (plan/from-json job-plan-json)
+          job-uuid (:uuid job-plan)
+          worker-set (keys-qs/worker-set-name queue)
+          worker-uuid (keys-qs/worker-uuid job-uuid)]
+      (redis/with-transaction
+        (redis/sadd worker-set worker-uuid)
+        ; expire in 7 days if it hasn't been processed yet
+        (redis/setex (keys-qs/worker-key queue job-uuid) job-plan-json (* 60 60 24 7)))
+      (do-work a-foreman job-plan))
+    ))
+
 (defn start-worker [#^bluecollar.foreman.Foreman a-foreman]
   (future
     (let [new-redis-conn (redis/new-connection)
           queue (:queue-name a-foreman)]
       (while @(:continue-running a-foreman)
         (try
-          (let [job-plan-json (redis/brpop queue 2 new-redis-conn)]
-            (if (and (not (nil? job-plan-json)) (not (coll? job-plan-json)))
-              (let [job-plan (plan/from-json job-plan-json)
-                    job-uuid (:uuid job-plan)
-                    worker-set (keys-qs/worker-set-name queue)
-                    worker-uuid (keys-qs/worker-uuid job-uuid)]
-                (redis/sadd worker-set worker-uuid)
-                ; expire in 7 days if it hasn't been processed yet
-                (redis/setex (keys-qs/worker-key queue job-uuid) job-plan-json (* 60 60 24 7))
-                (do-work a-foreman job-plan))
-              ))
+          (on-receipt-handler a-foreman (redis/brpop queue 2 new-redis-conn))
           (catch Exception ex
             (logger/error ex)))))))
 
