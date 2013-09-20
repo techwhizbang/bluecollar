@@ -23,14 +23,9 @@
 (def key-names #{"failure-retry-counter" "failure-total-counter"
                  "worker-runtimes" "success-total-counter"})
 
-(defn worker-set-name [queue]
-  (str @prefix ":" "workers" ":" queue))
+(defn worker-set-name [queue] (str @prefix ":" "workers-processing" ":" queue ":" @postfix))
 
-(defn worker-uuid [uuid]
-  (str uuid ":" @postfix))
-
-(defn worker-key [queue uuid]
-  (str (worker-set-name queue) ":" (worker-uuid uuid)))
+(defn worker-key [queue uuid] (str (worker-set-name queue) ":" uuid))
 
 (defn failure-retry-counter-key
   ^{:doc "The name of the key where the retry count is stored for a failed job."}

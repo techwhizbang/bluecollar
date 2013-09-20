@@ -67,19 +67,25 @@
 (def foremen (atom []))
 (def master-queue (atom nil))
 
-(defn processing-queue-recovery
-  "Recovers job plans in the processing queue and places them at the front of their appropriate queue."
-  [processing-queue]
-  (let [incomplete-job-plan (redis/processing-pop processing-queue)]
-    (if-not (nil? incomplete-job-plan)
-      (do
-        (let [a-job-plan (job-plans/from-json incomplete-job-plan)
-              worker (:worker a-job-plan)
-              queue (:queue (workers-union/find-worker worker))]
-        (logger/info "Recovering this job " incomplete-job-plan)
-        (redis/rpush queue incomplete-job-plan))
-        (recur processing-queue))
-    )))
+(defn processing-recovery
+  "Recovers job plans left or stuck processing from a re-deploy, re-start, or a crash and places them at the front of their appropriate queue."
+  [queue-name]
+  (let [processing-set (keys-qs/worker-set-name queue-name)
+        unfinished-job-plan-uuids (redis/smembers processing-set)]
+    (doseq [uuid unfinished-job-plan-uuids]
+      (let [unfinished-job-plan (redis/get-value (keys-qs/worker-key queue-name uuid))]
+        (if-not (nil? unfinished-job-plan)
+          (do 
+            (logger/info "Recovering this job " unfinished-job-plan)
+            (let [a-job-plan (job-plans/from-json unfinished-job-plan)
+                  worker (:worker a-job-plan)
+                  intended-queue (:queue (workers-union/find-worker worker))]
+              (redis/rpush intended-queue unfinished-job-plan)
+            ))))
+
+      (redis/with-transaction
+          (redis/srem (keys-qs/worker-set-name queue-name) uuid)
+          (redis/del (keys-qs/worker-key queue-name uuid))))))
 
 (defn bluecollar-setup
   "Setup and start bluecollar by passing it the specifications for both the
@@ -108,9 +114,9 @@
                                      (workers-union/new-unionized-worker (:fn worker-defn)
                                                                          (:queue worker-defn)
                                                                          (:retry worker-defn))))
-    (processing-queue-recovery keys-qs/master-processing-queue-name)
-    (processing-queue-recovery keys-qs/processing-queue-name)
-
+    (doseq [[queue-name pool-size] queue-specs]
+      (processing-recovery queue-name))
+    
     (reset! master-queue (master/new-master-queue (get queue-specs "master" 1)))
 
     (startup @master-queue)

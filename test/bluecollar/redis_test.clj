@@ -64,14 +64,14 @@
 
 (deftest get-set-key-test
   (redis/setex "belgian" "tripel" 1)
-  (is (= "tripel" (redis/get-key "belgian")))
+  (is (= "tripel" (redis/get-value "belgian")))
   (Thread/sleep 2500)
-  (is (nil? (redis/get-key "belgian"))))
+  (is (nil? (redis/get-value "belgian"))))
 
 (deftest delete-a-key-test
   (redis/setex "belgian" "dubbel" 2)
   (redis/del "belgian")
-  (is (nil? (redis/get-key "belgian"))))
+  (is (nil? (redis/get-value"belgian"))))
 
 (deftest sadd-srem-item-test
   (redis/sadd "beers" "ipa")

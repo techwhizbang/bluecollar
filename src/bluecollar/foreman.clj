@@ -28,10 +28,9 @@
     (let [queue (:queue-name a-foreman)
           job-plan (plan/from-json job-plan-json)
           job-uuid (:uuid job-plan)
-          worker-set (keys-qs/worker-set-name queue)
-          worker-uuid (keys-qs/worker-uuid job-uuid)]
+          worker-set (keys-qs/worker-set-name queue)]
       (redis/with-transaction
-        (redis/sadd worker-set worker-uuid)
+        (redis/sadd worker-set job-uuid)
         ; expire in 7 days if it hasn't been processed yet
         (redis/setex (keys-qs/worker-key queue job-uuid) job-plan-json (* 60 60 24 7)))
       (do-work a-foreman job-plan))

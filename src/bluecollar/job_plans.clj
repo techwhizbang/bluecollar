@@ -12,10 +12,6 @@
   (schedulable? [_] "Returns true or false depending on whether the implementation can be scheduled for the future.")
   (secs-to-runtime [_] "Number of seconds remaining before it is run."))
 
-(defprotocol Hookable
-  (before [_] "Add any 'global' functionality that will run exactly prior to every JobPlan's execution.")
-  (after [_] "Add any 'global' functionality that will run exactly after to every JobPlan's execution."))
-
 (defrecord JobPlan [worker #^clojure.lang.PersistentVector args uuid scheduled-runtime])
 
 (extend-type JobPlan
@@ -68,8 +64,14 @@
     ))
 
 (defn on-success [job-plan]
-  (redis/remove-from-processing (as-json job-plan))
-  (redis/success-total-inc))
+  (let [worker-name (:worker job-plan)
+        registered-worker (workers-union/find-worker worker-name)
+        queue (:queue registered-worker)
+        job-uuid (:uuid job-plan)]
+    (redis/with-transaction
+      (redis/srem (keys-and-qs/worker-set-name queue) job-uuid)
+      (redis/del (keys-and-qs/worker-key queue job-uuid))
+      (redis/success-total-inc))))
 
 (defn below-failure-threshold? [uuid]
   (< (redis/failure-retry-cnt uuid) @maximum-failures))
@@ -116,15 +118,21 @@
    Always remove the failed job from the processing queue.
    If allowable, retry the failed job-plan, otherwise remove it's UUID from the failed workers hash."
   [job-plan]
-  (redis/failure-total-inc)
-  (logger/debug "Removing" (as-json job-plan) "from processing queue")
-  (redis/remove-from-processing (as-json job-plan))
-  (let [uuid (:uuid job-plan)]
-    (if (retry-on-failure? job-plan)
-      (do
-        (redis/failure-retry-inc uuid)
-        (retry job-plan))
-      (redis/failure-retry-del uuid))))
+  (let [worker-name (:worker job-plan)
+        registered-worker (workers-union/find-worker worker-name)
+        queue (:queue registered-worker)
+        job-uuid (:uuid job-plan)]
+    (logger/debug "Removing" (as-json job-plan) "from processing queue")
+    (redis/with-transaction
+      (redis/srem (keys-and-qs/worker-set-name queue) job-uuid)
+      (redis/del (keys-and-qs/worker-key queue job-uuid))
+      (redis/failure-total-inc))
+    (let [uuid (:uuid job-plan)]
+      (if (retry-on-failure? job-plan)
+        (do
+          (redis/failure-retry-inc uuid)
+          (retry job-plan))
+        (redis/failure-retry-del uuid)))))
 
 (defn as-runnable [job-plan]
   (let [worker-name (:worker job-plan)
@@ -136,12 +144,7 @@
       (try
         (logger/info "executing a JobPlan with UUID:" uuid "for worker" worker-name)
         (let [worker-start-time (time/now)]
-          (if (extends? Hookable JobPlan)
-            (do  
-              (before job-plan)
-              (apply worker-fn args)
-              (after job-plan))
-            (apply worker-fn args))
+          (apply worker-fn args)
           (redis/push-worker-runtime worker-name (time/in-msecs (time/interval worker-start-time (time/now))))
           (on-success job-plan))
       (catch Exception e

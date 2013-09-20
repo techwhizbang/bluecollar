@@ -7,7 +7,7 @@
 
 (def pool-and-settings (atom nil))
 
-(def config (atom {}))
+(def config (atom {:host "127.0.0.1" :port 6379 :db 0 :timeout 5000}))
 
 (defn set-config [redis-configs]
   (reset! config redis-configs))
@@ -142,9 +142,9 @@
   ([k] (del k @pool-and-settings))
   ([k redis-conn] (with-redis-conn redis-conn (redis-client/del k))))
 
-(defn get-key
-  "Gets a key."
-  ([k] (get-key k @pool-and-settings))
+(defn get-value
+  "Gets a value."
+  ([k] (get-value k @pool-and-settings))
   ([k redis-conn] (with-redis-conn redis-conn (redis-client/get k))))
 
 (defn sadd 
@@ -160,6 +160,10 @@
 (defn smember? 
   ([a-set item] (smember? a-set item @pool-and-settings))
   ([a-set item redis-conn] (> (with-redis-conn redis-conn (redis-client/sismember a-set item)) 0)))
+
+(defn smembers
+  ([a-set] (smembers a-set @pool-and-settings))
+  ([a-set redis-conn] (with-redis-conn redis-conn (redis-client/smembers a-set))))
 
 (defn brpop
   "Blocking operation that pops a value from the tail of the queue."

@@ -11,17 +11,14 @@
 
 (deftest worker-set-name-test
   (testing "with the default prefix"
-    (is (= "bluecollar:workers:orders" (kq/worker-set-name "orders"))))
+    (is (= "bluecollar:workers-processing:orders:default" (kq/worker-set-name "orders"))))
 
   (testing "with a customized prefix"
     (kq/setup-prefix "foo-bar-production")
-    (is (= "foo-bar-production:workers:fulfillment" (kq/worker-set-name "fulfillment")))))
+    (is (= "foo-bar-production:workers-processing:fulfillment:default" (kq/worker-set-name "fulfillment")))))
 
 (deftest worker-key-test
-  (is (= "bluecollar:workers:queue:uuid:default" (kq/worker-key "queue" "uuid"))))
-
-(deftest worker-uuid-test
-  (is (= "uuid:default" (kq/worker-uuid "uuid"))))
+  (is (= "bluecollar:workers-processing:queue:default:uuid" (kq/worker-key "queue" "uuid"))))
 
 (deftest register-queues-test
 

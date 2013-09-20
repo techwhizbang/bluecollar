@@ -22,39 +22,51 @@
   (reset! bluecollar.fake-worker/fake-worker-failures 0)
   (reset! bluecollar.fake-worker/cnt-me 0)))
 
-(deftest processing-queue-recovery-test
+(deftest processing-recovery-test
 
   (workers-union/register-worker :hard-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform "crunch-numbers" false))
   (keys-qs/register-queues ["crunch-numbers"] nil)
   (keys-qs/register-keys)
 
-  (testing "recovers jobs uncompleted in the processing queue"
-    (let [job-plan (plan/new-job-plan :hard-worker [])
+  (testing "recovers jobs unfinished processing"
+    (let [queue "crunch-numbers"
+          job-plan (plan/new-job-plan :hard-worker [])
+          uuid (:uuid job-plan)
           job-json (plan/as-json job-plan)
-          _ (redis/push "crunch-numbers" job-json)
-          _ (redis/blocking-pop "crunch-numbers")
+          
+          worker-set (keys-qs/worker-set-name queue)
+          
+          _ (redis/sadd worker-set uuid)
+          _ (redis/setex (keys-qs/worker-key queue uuid) job-json 5000)
+          
           queue-cnt (count (redis/lrange "crunch-numbers" 0 0))
-          processing-cnt (count (redis/lrange keys-qs/processing-queue-name 0 0))]
+          processing-cnt (count (redis/smembers worker-set))]
           (is (= 0 queue-cnt))
           (is (= 1 processing-cnt))
-          (processing-queue-recovery keys-qs/processing-queue-name)
+          (processing-recovery queue)
           (is (= 1 (count (redis/lrange "crunch-numbers" 0 0))))
-          (is (= 0 (count (redis/lrange keys-qs/processing-queue-name 0 0))))
-          (is (= job-json (redis/blocking-pop "crunch-numbers")))))
+          (is (= 0 (count (redis/smembers worker-set))))
+          (is (= job-json (redis/rpop "crunch-numbers")))))
 
-  (testing "recovers jobs uncompleted in the master processing queue"
-    (let [job-plan (plan/new-job-plan :hard-worker [])
+  (testing "recovers jobs unfinished processing from the master processing set"
+    (let [queue "crunch-numbers"
+          job-plan (plan/new-job-plan :hard-worker [])
+          uuid (:uuid job-plan)
           job-json (plan/as-json job-plan)
-          _ (redis/push keys-qs/master-queue-name job-json)
-          _ (redis/blocking-pop keys-qs/master-queue-name keys-qs/master-processing-queue-name 2)
-          queue-cnt (count (redis/lrange keys-qs/master-queue-name 0 0))
-          processing-cnt (count (redis/lrange keys-qs/master-processing-queue-name 0 0))]
+          
+          worker-set (keys-qs/worker-set-name "master")
+          
+          _ (redis/sadd worker-set uuid)
+          _ (redis/setex (keys-qs/worker-key "master" uuid) job-json 5000)
+          
+          queue-cnt (count (redis/lrange "crunch-numbers" 0 0))
+          processing-cnt (count (redis/smembers worker-set))]
           (is (= 0 queue-cnt))
           (is (= 1 processing-cnt))
-          (processing-queue-recovery keys-qs/master-processing-queue-name)
+          (processing-recovery "master")
           (is (= 1 (count (redis/lrange "crunch-numbers" 0 0))))
-          (is (= 0 (count (redis/lrange keys-qs/master-processing-queue-name 0 0))))
-          (is (= job-json (redis/blocking-pop "crunch-numbers"))))))
+          (is (= 0 (count (redis/smembers worker-set))))
+          (is (= job-json (redis/rpop "crunch-numbers"))))))
 
 (deftest bluecollar-setup-teardown-test
   (testing "can successfully setup and teardown the bluecollar environment"
