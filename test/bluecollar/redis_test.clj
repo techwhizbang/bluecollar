@@ -62,6 +62,23 @@
   (redis/success-total-del)
   (is (= 0 (redis/success-total-cnt))))
 
+(deftest get-set-key-test
+  (redis/setex "belgian" "tripel" 1)
+  (is (= "tripel" (redis/get-value "belgian")))
+  (Thread/sleep 2500)
+  (is (nil? (redis/get-value "belgian"))))
+
+(deftest delete-a-key-test
+  (redis/setex "belgian" "dubbel" 2)
+  (redis/del "belgian")
+  (is (nil? (redis/get-value"belgian"))))
+
+(deftest sadd-srem-item-test
+  (redis/sadd "beers" "ipa")
+  (is (redis/smember? "beers" "ipa"))
+  (redis/srem "beers" "ipa")
+  (is (not (redis/smember? "beers" "ipa"))))
+
 (deftest push-value-onto-queue-test
   (testing "pushes a String value onto a named queued"
     (is (= (redis/push "bacon" "eggs") 1)))

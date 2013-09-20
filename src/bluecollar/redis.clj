@@ -7,7 +7,7 @@
 
 (def pool-and-settings (atom nil))
 
-(def config (atom {}))
+(def config (atom {:host "127.0.0.1" :port 6379 :db 0 :timeout 5000}))
 
 (defn set-config [redis-configs]
   (reset! config redis-configs))
@@ -132,9 +132,44 @@
   ([queue-name] (rpop queue-name @pool-and-settings))
   ([queue-name redis-conn] (with-redis-conn redis-conn (redis-client/rpop (keys-qs/fetch-queue queue-name)))))
 
-(defn brpop-no-conn
-  "Pops a value from the tail of the queue."
-  ([queue-name] (redis-client/brpop (keys-qs/fetch-queue queue-name) 2)))
+(defn setex
+  "Sets a key value with an expiration."
+  ([k v expiry] (setex k v expiry @pool-and-settings))
+  ([k v expiry redis-conn] (with-redis-conn redis-conn (redis-client/setex k expiry v))))
+
+(defn del
+  "Deletes a key."
+  ([k] (del k @pool-and-settings))
+  ([k redis-conn] (with-redis-conn redis-conn (redis-client/del k))))
+
+(defn get-value
+  "Gets a value."
+  ([k] (get-value k @pool-and-settings))
+  ([k redis-conn] (with-redis-conn redis-conn (redis-client/get k))))
+
+(defn sadd 
+  "Adds an item to a set" 
+  ([a-set item] (sadd a-set item @pool-and-settings))
+  ([a-set item redis-conn] (with-redis-conn redis-conn (redis-client/sadd a-set item))))
+
+(defn srem
+  "Removes an item from a set"
+  ([a-set item] (srem a-set item @pool-and-settings))
+  ([a-set item redis-conn] (with-redis-conn redis-conn (redis-client/srem a-set item))))
+
+(defn smember? 
+  ([a-set item] (smember? a-set item @pool-and-settings))
+  ([a-set item redis-conn] (> (with-redis-conn redis-conn (redis-client/sismember a-set item)) 0)))
+
+(defn smembers
+  ([a-set] (smembers a-set @pool-and-settings))
+  ([a-set redis-conn] (with-redis-conn redis-conn (redis-client/smembers a-set))))
+
+(defn brpop
+  "Blocking operation that pops a value from the tail of the queue."
+  ([queue-name] (brpop queue-name 2))
+  ([queue-name timeout] (brpop queue-name timeout @pool-and-settings))
+  ([queue-name timeout redis-conn] (second (with-redis-conn redis-conn (redis-client/brpop (keys-qs/fetch-queue queue-name) 2)))))
 
 (defn pop-to-processing
   "Pops a value from the queue and places the value into the processing queue."

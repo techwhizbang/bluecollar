@@ -6,7 +6,19 @@
 
 (use-fixtures :each (fn [f]
   (kq/setup-prefix nil)
+  (kq/setup-postfix nil)
   (f)))
+
+(deftest worker-set-name-test
+  (testing "with the default prefix"
+    (is (= "bluecollar:workers-processing:orders:default" (kq/worker-set-name "orders"))))
+
+  (testing "with a customized prefix"
+    (kq/setup-prefix "foo-bar-production")
+    (is (= "foo-bar-production:workers-processing:fulfillment:default" (kq/worker-set-name "fulfillment")))))
+
+(deftest worker-key-test
+  (is (= "bluecollar:workers-processing:queue:default:uuid" (kq/worker-key "queue" "uuid"))))
 
 (deftest register-queues-test
 
@@ -47,6 +59,15 @@
   (testing "the given prefix"
     (kq/setup-prefix "my-app")
     (is (= "my-app" @kq/prefix))))
+
+(deftest setup-postfix-test
+
+  (testing "the default postfix"
+    (is (= "default" @kq/postfix)))
+
+  (testing "a customized postfix"
+    (kq/setup-postfix "server-22")
+    (is (= "server-22" @kq/postfix))))
 
 (deftest register-keys-test
   (kq/register-keys)

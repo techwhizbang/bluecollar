@@ -5,7 +5,14 @@
           Feel free to change the name of this value if you see fit."}
   (atom "bluecollar"))
 
+(def postfix
+  ^{:doc "The postfix will get tacked onto the keys, lists, and data structures when it matters
+          where the work is being performed."}
+  (atom "default"))
+
 (defn setup-prefix [prefix-name] (reset! prefix (or prefix-name "bluecollar")))
+
+(defn setup-postfix [postfix-name] (reset! postfix (or postfix-name "default")))
 
 (defn- prefix-key [key-name] (str @prefix ":" key-name))
 
@@ -15,6 +22,10 @@
 
 (def key-names #{"failure-retry-counter" "failure-total-counter"
                  "worker-runtimes" "success-total-counter"})
+
+(defn worker-set-name [queue] (str @prefix ":" "workers-processing" ":" queue ":" @postfix))
+
+(defn worker-key [queue uuid] (str (worker-set-name queue) ":" uuid))
 
 (defn failure-retry-counter-key
   ^{:doc "The name of the key where the retry count is stored for a failed job."}

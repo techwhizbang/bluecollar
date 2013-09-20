@@ -29,7 +29,7 @@
       (workers-union/register-workers workers)
       (let [uuid (async-job-for :hard-worker [{"mastersite" "test"} 2])]      
         (startup master-queue)
-        (Thread/sleep 2000)
+        (Thread/sleep 5000)
         (is (= uuid (:uuid (plan/from-json (redis/rpop "intended-queue")))))
         (is (nil? (redis/rpop keys-qs/master-processing-queue-name))))
       (shutdown master-queue)

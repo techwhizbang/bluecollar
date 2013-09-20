@@ -9,14 +9,26 @@
 
 (defrecord MasterQueue [worker-count continue-running])
 
-(defn- handler [value]
-  (if (and (not (nil? value)) (not (coll? value)))
-    (let [job-plan (plan/from-json value)
+(defn- handler [job-plan-json]
+  (if (and (not (nil? job-plan-json)) (not (coll? job-plan-json)))
+    (let [job-plan (plan/from-json job-plan-json)
+          job-uuid (:uuid job-plan)
+          master-queue keys-qs/master-queue-name
+          worker-set (keys-qs/worker-set-name master-queue)
+          worker-key (keys-qs/worker-key master-queue job-uuid)
           worker (workers-union/find-worker (:worker job-plan))
           intended-queue (:queue worker)]
-      (redis/push intended-queue value)
-      (redis/remove-from-processing value keys-qs/master-processing-queue-name)
-      )))
+      (redis/with-transaction
+        ; processing
+        (redis/sadd worker-set job-uuid)
+        (redis/setex worker-key job-plan-json (* 60 60 24 7))
+        ; push it to the intended queue
+        (redis/push intended-queue job-plan-json)
+        ; remove it from processing
+        (redis/srem worker-set job-uuid)
+        (redis/del worker-key)))
+      )
+  )
 
 (extend-type MasterQueue
   Lifecycle
@@ -29,9 +41,7 @@
         (let [new-redis-conn (redis/new-connection)]
           (while @(:continue-running this)
             (try
-              (let [queue keys-qs/master-queue-name
-                    processing-queue keys-qs/master-processing-queue-name]
-                (handler (redis/blocking-pop queue processing-queue 1 new-redis-conn)))
+              (handler (redis/brpop keys-qs/master-queue-name 1 new-redis-conn))
               (catch Exception ex
                 (logger/error ex))))))
     ))
