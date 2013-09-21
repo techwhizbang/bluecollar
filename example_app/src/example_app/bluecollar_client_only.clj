@@ -9,7 +9,7 @@
 
 (defroutes app
   (GET "/" []
-    (async-job-for :hard-worker [5000])
+    (async-job-for :hard-worker [500])
     "<h1>Bluecollar is workin' hard...</h1>"))
 
 (defn -main [& args]

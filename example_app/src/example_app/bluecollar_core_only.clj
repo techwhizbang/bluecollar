@@ -12,4 +12,4 @@
 (defn -main [& args]
   (.addShutdownHook (Runtime/getRuntime)
       (Thread. #((bluecollar-teardown))))
-  (bluecollar-setup queue-specs worker-specs {:instance-name "bc-server-1"}))
+  (bluecollar-setup queue-specs worker-specs {:redis-timeout 0}))

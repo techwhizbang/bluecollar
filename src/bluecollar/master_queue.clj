@@ -35,8 +35,8 @@
     (logger/info "Starting the MasterQueue")
     
     (dotimes [x (:worker-count this)]
-      (future
-        (let [new-redis-conn (redis/new-connection)]
+      (let [new-redis-conn (redis/new-connection)]
+        (future
           (while @(:continue-running this)
             (try
               (handler (redis/brpop keys-qs/master-queue-name 1 new-redis-conn))

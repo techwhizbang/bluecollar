@@ -40,9 +40,9 @@
     ))
 
 (defn start-worker [#^bluecollar.foreman.Foreman a-foreman]
-  (future
-    (let [new-redis-conn (redis/new-connection)
-          queue (:queue-name a-foreman)]
+  (let [new-redis-conn (redis/new-connection)
+        queue (:queue-name a-foreman)]
+    (future
       (while @(:continue-running a-foreman)
         (try
           (on-receipt-handler a-foreman (redis/brpop queue 2 new-redis-conn))
