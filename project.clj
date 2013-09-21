@@ -1,4 +1,4 @@
-(defproject bluecollar/bluecollar "1.0.0-beta9-SNAPSHOT"
+(defproject bluecollar/bluecollar "1.0.0-beta9"
 
   :description "Bluecollar: a simple yet full featured distributed background processing solution written in Clojure."
   :url "http://github.com/techwhizbang/bluecollar"
