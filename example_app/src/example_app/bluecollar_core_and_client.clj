@@ -17,15 +17,15 @@
   (require [example-app.worker]))
 
 (def worker-specs {:hard-worker {:fn example-app.worker/heavy-lifting, :queue "high-importance", :retry true}})
-(def queue-specs {"high-importance" 25 "master" 25})
+(def queue-specs {"high-importance" 10 "master" 10})
 
 (defroutes app
   (GET "/" []
-    (async-job-for :hard-worker [5000])
+    (async-job-for :hard-worker [10000])
     "<h1>Bluecollar is workin' hard...</h1>"))
 
 (defn -main [& args]
   (.addShutdownHook (Runtime/getRuntime)
       (Thread. #((bluecollar-teardown))))
-  (bluecollar-setup queue-specs worker-specs)
+  (bluecollar-setup queue-specs worker-specs {:redis-timeout 0 :redis-key-prefix "my-app" :redis-key-postfix "server01"})
   (run-jetty app {:port 8080 :join? true}))

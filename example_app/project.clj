@@ -4,7 +4,7 @@
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.5.1"]
-                 [bluecollar/bluecollar "1.0.0-beta7-SNAPSHOT"]
+                 [bluecollar/bluecollar "1.0.0-beta8-SNAPSHOT"]
                  [compojure "1.1.5"]
                  [ring "1.2.0"]]
   :main example-app.bluecollar-core-and-client)

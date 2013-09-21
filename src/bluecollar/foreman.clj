@@ -24,16 +24,19 @@
       (apply (plan/as-runnable job-plan) [])))
 
 (defn- on-receipt-handler [a-foreman job-plan-json]
+  (logger/debug "on-receipt-handler" job-plan-json)
   (if (and (not (nil? job-plan-json)) (not (coll? job-plan-json)))
     (let [queue (:queue-name a-foreman)
           job-plan (plan/from-json job-plan-json)
           job-uuid (:uuid job-plan)
           worker-set (keys-qs/worker-set-name queue)]
-      (redis/with-transaction
-        (redis/sadd worker-set job-uuid)
-        ; expire in 7 days if it hasn't been processed yet
-        (redis/setex (keys-qs/worker-key queue job-uuid) job-plan-json (* 60 60 24 7)))
-      (do-work a-foreman job-plan))
+     
+      (redis/sadd worker-set job-uuid)
+      ; expire in 7 days if it hasn't been processed yet
+      (redis/setex (keys-qs/worker-key queue job-uuid) job-plan-json (* 60 60 24 7))
+     
+      (do-work a-foreman job-plan)
+      )
     ))
 
 (defn start-worker [#^bluecollar.foreman.Foreman a-foreman]
@@ -50,7 +53,7 @@
   Lifecycle
 
   (startup [this]
-    (logger/info "Starting up foreman")
+    (logger/info "Starting up foreman for queue" (:queue-name this))
     (let [thread-cnt (:worker-count this)
           scheduled-pool (. Executors newScheduledThreadPool thread-cnt)]
       (reset! (:continue-running this) true)
@@ -58,6 +61,7 @@
       (.prestartAllCoreThreads @(:scheduled-pool this))
 
       (dotimes [x (:worker-count this)]
+        (logger/info "Foreman starting worker" x)
         (start-worker this))))
 
   (shutdown [this]

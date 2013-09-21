@@ -23,31 +23,31 @@
 (deftest register-queues-test
 
   (testing "add queues to the registry"
-    (kq/register-queues queues nil)
+    (kq/register-queues queues)
     (is (not (nil? (kq/fetch-queue "master"))))
     (is (not (nil? (kq/fetch-queue "processing"))))
     (doseq [queue queues]
       (is (not (nil? (kq/fetch-queue queue))))))
 
   (testing "resets the registry each time it is called"
-    (kq/register-queues ["queue-55"] nil)
+    (kq/register-queues ["queue-55"])
     (is (not (nil? (kq/fetch-queue "master"))))
     (is (not (nil? (kq/fetch-queue "processing"))))
     (is (not (nil? (kq/fetch-queue "queue-55")))))
 
   (testing "properly modifies the original queue name"
-    (kq/register-queues queues nil)
+    (kq/register-queues queues)
     (is (= "bluecollar:queues:master" (kq/fetch-queue "master")))
     (is (= "bluecollar:queues:queue-1" (kq/fetch-queue "queue-1")))))
 
 (deftest fetch-queue-test
 
   (testing "returns a known queue"
-    (kq/register-queues queues nil)
+    (kq/register-queues queues)
     (is (= "bluecollar:queues:master" (kq/fetch-queue "master"))))
 
   (testing "registers a queue if unknown"
-    (kq/register-queues queues nil)
+    (kq/register-queues queues)
     (is (= "bluecollar:queues:wonky-unregistered" (kq/fetch-queue "wonky-unregistered")))))
 
 (deftest setup-prefix-test

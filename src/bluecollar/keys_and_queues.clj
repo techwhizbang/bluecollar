@@ -72,14 +72,9 @@
         (fetch-queue queue-name))
       q)))
 
-(defn- register-processing-queues [instance-name]
-  (doseq [queue [master-processing-queue-name processing-queue-name]]
-    (swap! queue-registry assoc queue
-      (prefix-key (str "queues:" (str queue "-" (or instance-name "default")))))))
-
-(defn register-queues [queues instance-name]
+(defn register-queues [queues]
   (reset! queue-registry nil)
   (register-queue master-queue-name)
-  (register-processing-queues instance-name)
   (doseq [queue queues]
-    (register-queue queue)))
+    (if-not (= queue "master")
+      (register-queue queue))))

@@ -1,11 +1,11 @@
-(defproject bluecollar/bluecollar "1.0.0-beta7-SNAPSHOT"
+(defproject bluecollar/bluecollar "1.0.0-beta8"
   :description "Bluecollar: a simple yet full featured distributed background processing solution written in Clojure."
   :url "http://github.com/techwhizbang/bluecollar"
   :license {:name "Eclipse Public License"
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   :dependencies [[org.clojure/clojure "1.5.1"]
                  [clj-time "0.5.1"]
-                 [com.taoensso/carmine "1.8.0"] ; Redis client
+                 [com.taoensso/carmine "2.2.0"] ; Redis client
                  [cheshire "5.1.1"] ; JSON parsing
 
                  ;; Logging dependencies

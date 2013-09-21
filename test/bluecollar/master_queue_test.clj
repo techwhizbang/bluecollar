@@ -24,7 +24,7 @@
                                                                     "intended-queue"
                                                                     false)}
           master-queue (new-master-queue)]
-      (keys-qs/register-queues ["intended-queue"] nil)
+      (keys-qs/register-queues ["intended-queue"])
       (keys-qs/register-keys)
       (workers-union/register-workers workers)
       (let [uuid (async-job-for :hard-worker [{"mastersite" "test"} 2])]      

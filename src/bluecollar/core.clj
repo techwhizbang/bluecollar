@@ -83,9 +83,10 @@
               (redis/rpush intended-queue unfinished-job-plan)
             ))))
 
-      (redis/with-transaction
-          (redis/srem (keys-qs/worker-set-name queue-name) uuid)
-          (redis/del (keys-qs/worker-key queue-name uuid))))))
+      (redis/srem (keys-qs/worker-set-name queue-name) uuid)
+      (redis/del (keys-qs/worker-key queue-name uuid))
+
+      )))
 
 (defn bluecollar-setup
   "Setup and start bluecollar by passing it the specifications for both the
@@ -98,11 +99,12 @@
                               redis-hostname :redis-hostname
                               redis-port :redis-port
                               redis-db :redis-db
-                              redis-timeout :timeout
-                              instance-name :instance-name}]
+                              redis-timeout :redis-timeout
+                              redis-key-postfix :redis-key-postfix}]
     (logger/info "Bluecollar setup is beginning...")
     (keys-qs/setup-prefix redis-key-prefix)
-    (keys-qs/register-queues (keys queue-specs) instance-name)
+    (keys-qs/setup-postfix redis-key-postfix)
+    (keys-qs/register-queues (keys queue-specs))
     (keys-qs/register-keys)
     (redis/set-config {:host (or redis-hostname "127.0.0.1")
                        :port (or redis-port 6379)
@@ -124,7 +126,8 @@
     (doseq [[queue-name pool-size] (dissoc queue-specs "master")]
       (swap! foremen conj (foreman/new-foreman queue-name pool-size)))
 
-    (doseq [a-foreman @foremen] (startup a-foreman))))
+    (doseq [a-foreman @foremen] (startup a-foreman))
+))
 
 (defn bluecollar-teardown
   "Shut down bluecollar"

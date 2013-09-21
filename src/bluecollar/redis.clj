@@ -65,7 +65,9 @@
 (defn push-worker-runtime
   "Prepends the worker runtime in milliseconds."
   [worker-name runtime-in-millisecs]
-  (with-redis-conn @pool-and-settings (redis-client/lpush (keys-qs/worker-runtimes-key (name worker-name)) runtime-in-millisecs)))
+  (with-redis-conn @pool-and-settings 
+    (redis-client/lpush (keys-qs/worker-runtimes-key (name worker-name)) runtime-in-millisecs)
+    (redis-client/ltrim (keys-qs/worker-runtimes-key (name worker-name)) 0 999)))
 
 (defn get-worker-runtimes
   "Returns the last 1000 runtimes recorded for the given worker."

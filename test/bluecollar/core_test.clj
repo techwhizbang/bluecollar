@@ -25,7 +25,7 @@
 (deftest processing-recovery-test
 
   (workers-union/register-worker :hard-worker (workers-union/new-unionized-worker bluecollar.fake-worker/perform "crunch-numbers" false))
-  (keys-qs/register-queues ["crunch-numbers"] nil)
+  (keys-qs/register-queues ["crunch-numbers"])
   (keys-qs/register-keys)
 
   (testing "recovers jobs unfinished processing"

@@ -67,11 +67,15 @@
   (let [worker-name (:worker job-plan)
         registered-worker (workers-union/find-worker worker-name)
         queue (:queue registered-worker)
-        job-uuid (:uuid job-plan)]
-    (redis/with-transaction
-      (redis/srem (keys-and-qs/worker-set-name queue) job-uuid)
-      (redis/del (keys-and-qs/worker-key queue job-uuid))
-      (redis/success-total-inc))))
+        job-uuid (:uuid job-plan)
+        redis-conn (redis/new-connection)]
+    (logger/info "Successfully executed JobPlan with UUID" job-uuid)
+    
+    (redis/srem (keys-and-qs/worker-set-name queue) job-uuid redis-conn)
+    (redis/del (keys-and-qs/worker-key queue job-uuid) redis-conn)
+    (redis/success-total-inc redis-conn)
+    
+    ))
 
 (defn below-failure-threshold? [uuid]
   (< (redis/failure-retry-cnt uuid) @maximum-failures))
@@ -123,10 +127,11 @@
         queue (:queue registered-worker)
         job-uuid (:uuid job-plan)]
     (logger/debug "Removing" (as-json job-plan) "from processing queue")
-    (redis/with-transaction
+    ; (redis/with-transaction
       (redis/srem (keys-and-qs/worker-set-name queue) job-uuid)
       (redis/del (keys-and-qs/worker-key queue job-uuid))
-      (redis/failure-total-inc))
+      (redis/failure-total-inc)
+      ; )
     (let [uuid (:uuid job-plan)]
       (if (retry-on-failure? job-plan)
         (do

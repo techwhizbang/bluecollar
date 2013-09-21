@@ -7,7 +7,7 @@
 (use-fixtures :each (fn [f]
   (redis-setup)
   (keys-qs/register-keys)
-  (keys-qs/register-queues nil nil)
+  (keys-qs/register-queues nil)
   (f)))
 
 (deftest failure-retry-cnt-test

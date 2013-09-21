@@ -159,7 +159,7 @@
               job-plan-to-retry (assoc job-plan-original :scheduled-runtime (str (time/plus now-ish (time/secs (deref plan/delay-base)))))]
           (workers-union/register-workers workers)
           (keys-qs/register-keys)
-          (keys-qs/register-queues ["crunch-numbers"] nil)
+          (keys-qs/register-queues ["crunch-numbers"])
           (plan/on-failure job-plan-original)
           (is (= job-plan-to-retry (plan/from-json (redis/pop-to-processing "crunch-numbers"))))
           (is (not (nil? (redis/remove-from-processing (plan/as-json job-plan-to-retry)))))
