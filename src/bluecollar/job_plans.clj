@@ -67,13 +67,12 @@
   (let [worker-name (:worker job-plan)
         registered-worker (workers-union/find-worker worker-name)
         queue (:queue registered-worker)
-        job-uuid (:uuid job-plan)
-        redis-conn (redis/new-connection)]
+        job-uuid (:uuid job-plan)]
     (logger/info "Successfully executed JobPlan with UUID" job-uuid)
     
-    (redis/srem (keys-and-qs/worker-set-name queue) job-uuid redis-conn)
-    (redis/del (keys-and-qs/worker-key queue job-uuid) redis-conn)
-    (redis/success-total-inc redis-conn)
+    (redis/srem (keys-and-qs/worker-set-name queue) job-uuid)
+    (redis/del (keys-and-qs/worker-key queue job-uuid))
+    (redis/success-total-inc)
     
     ))
 
