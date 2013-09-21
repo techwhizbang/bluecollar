@@ -1,5 +1,19 @@
 # bluecollar changelog
 
+## 1.0.0-beta8 - Sept 21, 2013
+
+* Bug fix release addressing Redis connection issues dropping and/or hanging because of the use of the
+  redis/with-transaction fn (ie MULTI/EXEC) during startup. The problem has been resolved by removing usage
+  of redis/with-transaction until I can re-write the Redis connection management.
+
+## 1.0.0-beta7 - Sept 20, 2013
+
+* Bug fix release addressing issues arising from trying to remove LREM and replace with SETS and KEYS
+
+## 1.0.0-beta6 - Sept 17, 2013
+
+* Bug fix release addressing issues arising from trying to remove LREM and replace with SETS and KEYS
+
 ## 1.0.0-beta5 - Sept 17, 2013
 
 * Addressing a Redis CPU load problem due to the use of LREM when the processing queues were getting extremely large. The way work is "polled" has been improved to match exactly the number of pooled workers allocated which in turn makes the processing queue only as large as the worker pool. 
