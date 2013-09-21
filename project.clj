@@ -17,8 +17,7 @@
                                               com.sun.jmx/jmxri]]]
 
   :profiles {:dev {:dependencies [[org.clojars.runa/conjure "2.1.3"]]}
-             :1.3 {:dependencies [[org.clojure/clojure "1.3.0"]]}
              :1.4 {:dependencies [[org.clojure/clojure "1.4.0"]]}
              :1.5 {:dependencies [[org.clojure/clojure "1.5.1"]]}}
 
-  :aliases {"test-all" ["with-profile" "dev,default:dev,1.3,default:dev,1.4,default:dev,1.5,default" "test"]})
+  :aliases {"test-all" ["with-profile" "dev,default:dev,1.4,default:dev,1.5,default" "test"]})
