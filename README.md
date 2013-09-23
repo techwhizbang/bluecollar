@@ -41,7 +41,7 @@ If you are using Maven, add the following repository definition to your `pom.xml
 With Leiningen:
 
 ``` clj
-[bluecollar/bluecollar "1.0.0-beta8"]
+[bluecollar/bluecollar "1.0.0-beta9"]
 ```
 
 With Maven:
@@ -50,7 +50,7 @@ With Maven:
 <dependency>
   <groupId>bluecollar</groupId>
   <artifactId>bluecollar</artifactId>
-  <version>1.0.0-beta8</version>
+  <version>1.0.0-beta9</version>
 </dependency>
 ```
 
