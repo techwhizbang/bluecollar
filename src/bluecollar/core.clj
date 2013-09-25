@@ -1,18 +1,19 @@
 (ns bluecollar.core
-  "The core namespace for the bluecollar library. 
-  Use bluecollar.core to setup and teardown bluecollar.
+  "The core namespace for the Bluecollar library. 
+  Use bluecollar.core to startup and shutdown Bluecollar's backend processing.
 
-  In order to setup bluecollar first create two hash maps. The hash maps will contain
+  In order to startup Bluecollar first create two hash maps. The hash maps will contain
   the queue specifications and the worker specifications.
 
   As stated above, the queue specifications is a hash map.
   Each keyword in the hash map will be used as a queue name.
   Each value will determine the size of the thread pool backing the respective queue.
-  It can contain any number of arbitrarily named queues.
+  It can contain any number of arbitrarily named queues. Be mindful of the number of threads allocated to each
+  queue based on what your server has the capacity to handle.
 
   In this example there are 3 queue specifications:
 
-  => {\"high-importance\" 10 \"medium-importance\" 5 \"catch-all\" 5}
+  => {\"order-processing\" 10 \"fulfillment-processing\" 5 \"master\" 5}
 
   The worker specifications is also a hash map.
   Each keyword in the hash map will represent a unique worker (later this is how the worker can be referenced to enqueue jobs).
@@ -23,35 +24,39 @@
 
   In this example there are 2 worker specifications:
 
-  => { :worker-one {:fn clojure.core/+, :queue \"high-importance\", :retry true}
-       :worker-two {:fn nick.zalabak/blog, :queue \"catch-all\", :retry false} }
+  => { :worker-one {:fn order/process, :queue \"order-processing\", :retry true}
+       :worker-two {:fn fulfillment/process, :queue \"fulfillment-processing\", :retry false} }
 
   In order to setup bluecollar.core:
 
   => (use 'bluecollar.core)
-  => (def queue-specs {\"high-importance\" 10 \"medium-importance\" 5 \"catch-all\" 5})
-  => (def worker-specs {:worker-one {:fn clojure.core/+, :queue \"high-importance\", :retry true}
-                        :worker-two {:fn nick.zalabak/blog, :queue \"catch-all\", :retry false}})
-  => (bluecollar-setup queue-specs worker-specs)
+  => (def queue-specs {\"order-processing\" 10 \"fulfillment-processing\" 5 \"master\" 5})
+  => (def worker-specs {:worker-one {:fn order/process, :queue \"order-processing\", :retry true}
+                        :worker-two {:fn fulfillment/process, :queue \"fulfillment-processing\", :retry false}})
+  => (bluecollar-startup queue-specs worker-specs)
 
-  Optionally, bluecollar-setup accepts a third hash-map. The third hash-map contains connection
-  details for Redis. Most likely you aren't running Redis on the same server you're running this
-  application. In that scenario you'll need to provide the details on the hostname, port, db,
-  timeout, and prefix. The prefix is purely a naming convention where the value is prepended to
-  all of the data structures names stored in Redis.
-  Here is an example using an alternative hostname, port, db, timeout, and prefix:
-
-  => (def redis-specs {:redis-key-prefix \"my-awesome-app\",
-                       :redis-hostname \"redis-master.dc1.com\",
+  Optionally, bluecollar-startup accepts a third hash-map. The third hash-map contains connection
+  details for Redis. Chances are you aren't running Redis on the same server you're running your
+  application. In that scenario you'll need to provide the details on the following:
+    * redis-hostname (the hostname Redis is running on)
+    * redis-port (the port Redis is running on)
+    * redis-db (the Redis db used)
+    * redis-timeout (allowable to wait for a Redis connection)
+    * redis-key-prefix (is prepended to all of the data structures stored in Redis)
+    * redis-key-postfix (is appended to the end of the data structured stored in Redis)
+  
+  => (def redis-specs {:redis-hostname \"redis-master.dc1.com\",
                        :redis-port 1234,
                        :redis-db 6,
-                       :redis-timeout 6000})
+                       :redis-timeout 6000,
+                       :redis-key-prefix \"my-awesome-app\",
+                       :redis-key-postfix \"server-01\"})
 
-  => (bluecollar-setup queue-specs worker-specs redis-specs)
+  => (bluecollar-startup queue-specs worker-specs redis-specs)
 
   In order to safely shut down bluecollar:
 
-  => (bluecollar-teardown)
+  => (bluecollar-shutdown)
 
   "
   (:use bluecollar.lifecycle
@@ -88,20 +93,21 @@
 
       )))
 
-(defn bluecollar-setup
-  "Setup and start bluecollar by passing it the specifications for both the
+(defn bluecollar-startup
+  "Setup and start Bluecollar by passing it the specifications for both the
    queues and workers."
-  ([queue-specs worker-specs] (bluecollar-setup queue-specs worker-specs {:redis-hostname "127.0.0.1",
+  ([queue-specs worker-specs] (bluecollar-startup queue-specs worker-specs {:redis-hostname "127.0.0.1",
                                                                           :redis-port 6379,
                                                                           :redis-db 0,
                                                                           :redis-timeout 5000}))
-  ([queue-specs worker-specs {redis-key-prefix :redis-key-prefix
-                              redis-hostname :redis-hostname
+  ([queue-specs worker-specs {redis-hostname :redis-hostname
                               redis-port :redis-port
                               redis-db :redis-db
                               redis-timeout :redis-timeout
+                              redis-key-prefix :redis-key-prefix
                               redis-key-postfix :redis-key-postfix}]
     (logger/info "Bluecollar setup is beginning...")
+
     (keys-qs/setup-prefix redis-key-prefix)
     (keys-qs/setup-postfix redis-key-postfix)
     (keys-qs/register-queues (keys queue-specs))
@@ -127,10 +133,12 @@
       (swap! foremen conj (foreman/new-foreman queue-name pool-size)))
 
     (doseq [a-foreman @foremen] (startup a-foreman))
+
+    (logger/info "Bluecollar has started successfully...")
 ))
 
-(defn bluecollar-teardown
-  "Shut down bluecollar"
+(defn bluecollar-shutdown
+  "Shut down Bluecollar"
   []
   (logger/info "Bluecollar is being torn down...")
   (if-not (empty? @master-queue)

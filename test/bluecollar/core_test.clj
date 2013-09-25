@@ -68,9 +68,9 @@
           (is (= 0 (count (redis/smembers worker-set))))
           (is (= job-json (redis/rpop "crunch-numbers"))))))
 
-(deftest bluecollar-setup-teardown-test
-  (testing "can successfully setup and teardown the bluecollar environment"
-    (bluecollar-setup queue-specs worker-specs)
+(deftest bluecollar-startup-shutdown-test
+  (testing "can successfully start and stop the bluecollar environment"
+    (bluecollar-startup queue-specs worker-specs)
     (Thread/sleep 1000)
     ; check that the MasterQueue is there
     (is (not (nil? @master-queue)))
@@ -84,7 +84,7 @@
     (is (= 1 @fake-worker/cnt-me))
     (is (= 1 @fake-worker/fake-worker-failures))
     ; tear it down
-    (bluecollar-teardown)
+    (bluecollar-shutdown)
     (Thread/sleep 1000)
     ; ensure the MasterQueue is nil
     (is (nil? @master-queue))
