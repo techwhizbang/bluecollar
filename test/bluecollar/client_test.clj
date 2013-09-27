@@ -13,12 +13,12 @@
   (reset! bluecollar.fake-worker/perform-called false)
   (workers-union/clear-registered-workers)
   (redis/shutdown)
-  (bluecollar-client-setup [:hard-worker :worker-two] {:redis-key-prefix "fleur-de-sel"})
+  (bluecollar-client-startup [:hard-worker :worker-two] {:redis-key-prefix "fleur-de-sel"})
   (redis/flushdb)
   (f)
-  (bluecollar-client-teardown)))
+  (bluecollar-client-shutdown)))
 
-(deftest bluecollar-client-setup-test
+(deftest bluecollar-client-startup-test
   (testing "registers the worker specs"
     (is (not (empty? @workers-union/registered-workers))))
 
@@ -28,9 +28,9 @@
   (testing "sets an alternative redis-namespace"
     (is (= "fleur-de-sel" @keys-qs/prefix))))
 
-(deftest bluecollar-client-teardown-test
-  (testing "teardown works properly"
-    (bluecollar-client-teardown)
+(deftest bluecollar-client-shutdown-test
+  (testing "shutdown works properly"
+    (bluecollar-client-shutdown)
     (is (empty? @workers-union/registered-workers))
     (is (= "bluecollar" @keys-qs/prefix))))
 

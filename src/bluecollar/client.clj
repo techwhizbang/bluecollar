@@ -10,9 +10,9 @@
 
    => (use 'bluecollar.client)
    => (def worker-specs [:worker-one, :worker-two])
-   => (bluecollar-client-setup worker-specs)
+   => (bluecollar-client-startup worker-specs)
 
-   After performing bluecollar-client-setup the application can begin using
+   After performing bluecollar-client-startup the application can begin using
    \"async-job-for\".
 
    Assuming :fibonacci-worker :fn takes a single argument, namely the number of 
@@ -36,9 +36,9 @@
             [bluecollar.keys-and-queues :as keys-qs]
             [clojure.tools.logging :as logger]))
 
-(defn bluecollar-client-setup
-  ^{:doc "Setup bluecollar for a client application."}
-  ([worker-specs] (bluecollar-client-setup worker-specs {:redis-hostname "127.0.0.1",
+(defn bluecollar-client-startup
+  ^{:doc "Startup Bluecollar for a client application."}
+  ([worker-specs] (bluecollar-client-startup worker-specs {:redis-hostname "127.0.0.1",
                                                          :redis-port 6379,
                                                          :redis-db 0,
                                                          :redis-timeout 5000}))
@@ -56,8 +56,8 @@
     (doseq [worker-name worker-specs]
       (workers-union/register-worker worker-name (workers-union/new-unionized-worker)))))
 
-(defn bluecollar-client-teardown 
-  ^{:doc "Teardown bluecollar for a client application"}
+(defn bluecollar-client-shutdown
+  ^{:doc "Shutdown Bluecollar for a client application"}
   [] 
   (keys-qs/setup-prefix nil)
   (redis/shutdown)

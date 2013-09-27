@@ -138,8 +138,10 @@
           (retry job-plan))
         (redis/failure-retry-del uuid)))))
 
-(defn as-runnable [job-plan]
-  (let [worker-name (:worker job-plan)
+(defn as-runnable 
+  ([job-plan] (as-runnable job-plan (fn noop-callback-fn [] "noop")))
+  ([job-plan callback-fn]
+    (let [worker-name (:worker job-plan)
         registered-worker (workers-union/find-worker worker-name)
         worker-fn (:func registered-worker)
         uuid (:uuid job-plan)
@@ -155,5 +157,6 @@
         (logger/error e "there was an error when executing a JobPlan with UUID:" uuid "for worker" worker-name)
         (on-failure job-plan))
       (finally
-        )))
-    ))
+        (logger/debug "Callback function is about to execute")
+        (callback-fn))))
+    )))
