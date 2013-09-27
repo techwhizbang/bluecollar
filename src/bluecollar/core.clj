@@ -134,13 +134,13 @@
 
     (doseq [a-foreman @foremen] (startup a-foreman))
 
-    (logger/info "Bluecollar has started successfully...")
+    (logger/info "Bluecollar has started successfully.")
 ))
 
 (defn bluecollar-shutdown
   "Shut down Bluecollar"
   []
-  (logger/info "Bluecollar is being torn down...")
+  (logger/info "Bluecollar is being shut down...")
   (if-not (empty? @master-queue)
     (do
       (shutdown @master-queue)
@@ -150,4 +150,5 @@
       (doseq [a-foreman @foremen] (shutdown a-foreman))
       (reset! foremen [])))
   (reset! workers-union/registered-workers {})
-  (redis/shutdown))
+  (redis/shutdown)
+  (logger/info "Bluecollar has shut down successfully."))
