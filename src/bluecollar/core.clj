@@ -97,16 +97,16 @@
   "Setup and start Bluecollar by passing it the specifications for both the
    queues and workers."
   ([queue-specs worker-specs] (bluecollar-startup queue-specs worker-specs {:redis-hostname "127.0.0.1",
-                                                                          :redis-port 6379,
-                                                                          :redis-db 0,
-                                                                          :redis-timeout 5000}))
+                                                                            :redis-port 6379,
+                                                                            :redis-db 0,
+                                                                            :redis-timeout 5000}))
   ([queue-specs worker-specs {redis-hostname :redis-hostname
                               redis-port :redis-port
                               redis-db :redis-db
                               redis-timeout :redis-timeout
                               redis-key-prefix :redis-key-prefix
                               redis-key-postfix :redis-key-postfix}]
-    (logger/info "Bluecollar setup is beginning...")
+    (logger/info "Bluecollar is setting up...")
 
     (keys-qs/setup-prefix redis-key-prefix)
     (keys-qs/setup-postfix redis-key-postfix)

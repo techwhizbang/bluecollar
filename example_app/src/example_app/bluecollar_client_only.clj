@@ -13,5 +13,5 @@
     "<h1>Bluecollar is workin' hard...</h1>"))
 
 (defn -main [& args]
-  (bluecollar-client-setup worker-specs)
+  (bluecollar-client-startup worker-specs)
   (run-jetty app {:port 8080 :join? true}))

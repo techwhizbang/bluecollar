@@ -11,5 +11,5 @@
 
 (defn -main [& args]
   (.addShutdownHook (Runtime/getRuntime)
-      (Thread. #((bluecollar-teardown))))
-  (bluecollar-setup queue-specs worker-specs {:redis-timeout 0}))
+      (Thread. #((bluecollar-shutdown))))
+  (bluecollar-startup queue-specs worker-specs {:redis-timeout 0}))
