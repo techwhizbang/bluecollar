@@ -23,6 +23,9 @@ reliability.
 `bluecollar` simply runs alongside or within any current Clojure application. It takes any set of 
 functions that exist in your application and can run them asynchronously, reliably, and of course distribute the work to any number of `bluecollar` server instances.
 
+## Is it production ready?
+Yes! I'm currently running `bluecollar` in production for a mission critical application that processes <b>millions of records every day</b>. Yes, millions.
+
 ## Installation
 
 `bluecollar` artifacts are [released to Clojars](https://clojars.org/bluecollar/bluecollar).
