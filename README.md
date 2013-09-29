@@ -21,7 +21,8 @@ reliability.
 ## What does it do exactly?
 
 `bluecollar` simply runs alongside or within any current Clojure application. It takes any set of 
-functions that exist in your application and can run them asynchronously, reliably, and of course distribute the work to any number of `bluecollar` server instances.
+functions that exist in your application and can run them asynchronously, reliably, and of course distribute the work to any number of `bluecollar` server instances. `bluecollar` is dependent on Redis
+as it's data structure store to perform both reliable queueing, and also stat tracking.
 
 ## Is it production ready?
 Yes! I'm currently running `bluecollar` in production for a mission critical application that processes <b>millions of records every day</b>. Yes, millions.
@@ -61,7 +62,6 @@ With Maven:
 
 Take a look at the [Quick Start](https://github.com/techwhizbang/bluecollar/wiki/Quick-Start) 
 or peruse the [Wiki](https://github.com/techwhizbang/bluecollar/wiki) to begin using `bluecollar`.
-
 
 ## Example Application
 
