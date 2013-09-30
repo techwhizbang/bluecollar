@@ -25,7 +25,7 @@ functions that exist in your application and can run them asynchronously, reliab
 as it's data structure store to perform both reliable queueing, and also stat tracking.
 
 ## Is it production ready?
-Yes! I'm currently running `bluecollar` in production for a mission critical application that processes <b>millions of records every day</b>. Yes, millions.
+Yes! I'm currently running `bluecollar` in production for a mission critical application that processes <b>millions of records every day</b>.
 
 ## Installation
 
