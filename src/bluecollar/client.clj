@@ -29,11 +29,12 @@
 
    => (async-job-for :fibonacci-worker [400] \"2013-06-23T21:44:32.391Z\")
    "
-  (:use [bluecollar.job-plans :only [async-job-plan]]
-         bluecollar.properties)
-  (:require [bluecollar.redis :as redis]
-            [bluecollar.workers-union :as workers-union]
-            [bluecollar.keys-and-queues :as keys-qs]
+  (:use bluecollar.properties)
+  (:require [bluecollar
+              (redis           :as redis)
+              (workers-union   :as workers-union)
+              (keys-and-queues :as keys-qs)
+              (job-plans :refer [async-job-plan])]
             [clojure.tools.logging :as logger]))
 
 (defn bluecollar-client-startup
