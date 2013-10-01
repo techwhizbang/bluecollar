@@ -1,5 +1,10 @@
 # bluecollar changelog
 
+## 1.0.0 - Sept 28, 2013
+
+* Finally releasing 1.0.0 after running in a production environment for over 2 weeks and working
+  out the kinks in previous beta releases.
+
 ## 1.0.0-beta8 - Sept 21, 2013
 
 * Bug fix release addressing Redis connection issues dropping and/or hanging because of the use of the
