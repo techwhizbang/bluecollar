@@ -61,19 +61,20 @@
   "
   (:use bluecollar.lifecycle
         bluecollar.properties)
-  (:require [bluecollar.master-queue :as master]
-            [bluecollar.foreman :as foreman]
-            [bluecollar.redis :as redis]
-            [bluecollar.job-plans :as job-plans]
-            [bluecollar.workers-union :as workers-union]
-            [bluecollar.keys-and-queues :as keys-qs]
+  (:require [bluecollar
+              (master-queue    :as master)
+              (foreman         :as foreman)
+              (redis           :as redis)
+              (job-plans       :as job-plans)
+              (workers-union   :as workers-union)
+              (keys-and-queues :as keys-qs)]
             [clojure.tools.logging :as logger]))
 
 (def foremen (atom []))
 (def master-queue (atom nil))
 
 (defn processing-recovery
-  "Recovers job plans left or stuck processing from a re-deploy, re-start, or a crash and places them at the front of their appropriate queue."
+  ^{:doc "Recovers job plans left or stuck processing from a re-deploy, re-start, or a crash and places them at the front of their appropriate queue."}
   [queue-name]
   (let [processing-set (keys-qs/worker-set-name queue-name)
         unfinished-job-plan-uuids (redis/smembers processing-set)]
@@ -94,8 +95,8 @@
       )))
 
 (defn bluecollar-startup
-  "Setup and start Bluecollar by passing it the specifications for both the
-   queues and workers."
+  ^{:doc "Setup and start Bluecollar by passing it the specifications for both the
+          queues and workers."}
   ([queue-specs worker-specs] (bluecollar-startup queue-specs worker-specs {:redis-hostname "127.0.0.1",
                                                                             :redis-port 6379,
                                                                             :redis-db 0,
@@ -138,7 +139,7 @@
 ))
 
 (defn bluecollar-shutdown
-  "Shut down Bluecollar"
+  ^{:doc "Shut down Bluecollar"}
   []
   (logger/info "Bluecollar is being shut down...")
   (if-not (empty? @master-queue)
