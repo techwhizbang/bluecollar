@@ -7,3 +7,7 @@ jdk:
   - oraclejdk7
 services:
   - redis-server
+# whitelist
+branches:
+  only:
+    - master
