@@ -1,9 +1,10 @@
 (ns bluecollar.master-queue
   (:use bluecollar.lifecycle)
-  (:require [bluecollar.redis :as redis]
-            [bluecollar.job-plans :as plan]
-            [bluecollar.workers-union :as workers-union]
-            [bluecollar.keys-and-queues :as keys-qs]
+  (:require [bluecollar
+              (redis           :as redis)
+              (job-plans       :as plan)
+              (workers-union   :as workers-union)
+              (keys-and-queues :as keys-qs)]
             [cheshire.core :as json]
             [clojure.tools.logging :as logger]))
 

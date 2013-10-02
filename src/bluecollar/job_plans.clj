@@ -39,23 +39,27 @@
 (defn generate-uuid [] (str (java.util.UUID/randomUUID)))
 
 (defn new-job-plan
-  "Instantiates a new JobPlan for a worker to perform.
-   Example: (new-job-plan :hard-worker [1 2 3])
-   The worker should be specified as a keyword, just as it was registered during setup.
-   The args should be specified as a Vector and must match the order and arity of the worker's function argument(s).
-   The optional scheduled runtime must be specified in ISO8601 date/time string format (ie. 2013-05-25T23:40:15.011Z)." 
+  ^{:doc "Instantiates a new JobPlan for a worker to perform.
+          Example: (new-job-plan :hard-worker [1 2 3])
+          The worker should be specified as a keyword, just as it was registered during setup.
+          The args should be specified as a Vector and must match the order and arity of the worker's function argument(s).
+          The optional scheduled runtime must be specified in ISO8601 date/time string format (ie. 2013-05-25T23:40:15.011Z)."}
   ([worker args] (new-job-plan worker args nil))
   ([worker args scheduled-runtime] (new-job-plan worker args (generate-uuid) scheduled-runtime))
   ([worker args uuid scheduled-runtime] (->JobPlan (keyword worker) args uuid scheduled-runtime)))
 
-(defn as-json [job-plan]
+(defn as-json 
+  ^{:doc "Serializes a JobPlan instance into JSON format."}
+  [job-plan]
   (let [job-plan-map {:worker (:worker job-plan)
                       :args (:args job-plan)
                       :uuid (:uuid job-plan)
                       :scheduled-runtime (time-coerce/to-string (:scheduled-runtime job-plan))}]
     (json/generate-string job-plan-map)))
 
-(defn from-json [plan-as-json]
+(defn from-json
+  ^{:doc "De-serializes a JobPlan in JSON form back to a JobPlan instance."}
+  [plan-as-json]
   (let [parsed-map (json/parse-string plan-as-json)]
     (new-job-plan (get parsed-map "worker") 
                   (get parsed-map "args") 
@@ -63,7 +67,9 @@
                   (get parsed-map "scheduled-runtime"))
     ))
 
-(defn on-success [job-plan]
+(defn on-success 
+  ^{:doc "Called upon successful execution of a JobPlan."}
+  [job-plan]
   (let [worker-name (:worker job-plan)
         registered-worker (workers-union/find-worker worker-name)
         queue (:queue registered-worker)
@@ -76,17 +82,22 @@
     
     ))
 
-(defn below-failure-threshold? [uuid]
-  (< (redis/failure-retry-cnt uuid) @maximum-failures))
+(defn below-failure-threshold?
+  ^{:doc "Return true|false depending on whether a particular JobPlan UUID has retried the maximum number of times"}
+  [uuid] (< (redis/failure-retry-cnt uuid) @maximum-failures))
 
-(defn retry-on-failure? [job-plan]
+(defn retry-on-failure? 
+  ^{:doc "Return true|false depending on whether a particular JobPlan should be retried."}
+  [job-plan]
   (let [worker-name (:worker job-plan)
         registered-worker (workers-union/find-worker worker-name)
         retryable-worker? (:retry registered-worker)
         uuid (:uuid job-plan)]
    (and retryable-worker? (below-failure-threshold? uuid))))
 
-(defn retry-delay [failures] (Math/pow @delay-base failures))
+(defn retry-delay 
+  ^{:doc "Time delay in seconds based on the number of failures."}
+  [failures] (Math/pow @delay-base failures))
 
 (defn async-job-plan
   ^{:doc "Push a JobPlan to the master queue to process asynchronously.
@@ -117,9 +128,9 @@
     (redis/push (:queue registered-worker) (as-json scheduled-job-plan))))
 
 (defn on-failure 
-  "Increment total job failures.
-   Always remove the failed job from the processing queue.
-   If allowable, retry the failed job-plan, otherwise remove it's UUID from the failed workers hash."
+  ^{:doc "Increment total job failures.
+          Always remove the failed job from the processing queue.
+          If allowable, retry the failed job-plan, otherwise remove it's UUID from the failed workers hash."}
   [job-plan]
   (let [worker-name (:worker job-plan)
         registered-worker (workers-union/find-worker worker-name)
@@ -138,7 +149,8 @@
           (retry job-plan))
         (redis/failure-retry-del uuid)))))
 
-(defn as-runnable 
+(defn as-runnable
+  ^{:doc "Converts a JobPlan into an executable function the underlying ExecutorService calls."}
   ([job-plan] (as-runnable job-plan (fn noop-callback-fn [] "noop")))
   ([job-plan callback-fn]
     (let [worker-name (:worker job-plan)

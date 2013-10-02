@@ -10,6 +10,17 @@
   (keys-qs/register-queues nil)
   (f)))
 
+(deftest redis-conn-test
+  (testing "returns a new RedisConnection with the default pool-size"
+    (let [conn (redis/new-connection redis/config)
+          pool (:pool (:pool conn))]
+      (is (= 10 (.getMaxActive pool)))))
+
+  (testing "returns a new RedisConnection with the given pool-size"
+    (let [conn (redis/new-connection redis/config 50)
+          pool (:pool (:pool conn))]
+      (is (= 50 (.getMaxActive pool))))))
+
 (deftest failure-retry-cnt-test
   (testing "returns zero when there are no failures"
     (is (= 0 (redis/failure-retry-cnt "no-failures"))))
