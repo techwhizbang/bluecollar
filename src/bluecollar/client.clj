@@ -40,20 +40,25 @@
 (defn bluecollar-client-startup
   ^{:doc "Startup Bluecollar for a client application."}
   ([worker-specs] (bluecollar-client-startup worker-specs {:redis-hostname "127.0.0.1",
-                                                         :redis-port 6379,
-                                                         :redis-db 0,
-                                                         :redis-timeout 5000}))
+                                                           :redis-port 6379,
+                                                           :redis-db 0,
+                                                           :redis-timeout 5000}))
   ([worker-specs {redis-key-prefix :redis-key-prefix
+                  redis-key-postfix :redis-key-postfix
                   redis-hostname :redis-hostname
                   redis-port :redis-port
                   redis-db :redis-db
                   redis-timeout :timeout}]
     (logger/info "Bluecollar client is starting up...")
+
     (keys-qs/setup-prefix redis-key-prefix)
-    (redis/startup {:host (or redis-hostname "127.0.0.1")
-                    :port (or redis-port 6379)
-                    :db (or redis-db 0)
-                    :timeout (or redis-timeout 5000)})
+    (keys-qs/setup-postfix redis-key-postfix)
+    (redis/set-config {:host (or redis-hostname "127.0.0.1")
+                       :port (or redis-port 6379)
+                       :db (or redis-db 0)
+                       :timeout (or redis-timeout 5000)})
+    (redis/startup)
+    
     (doseq [worker-name worker-specs]
       (workers-union/register-worker worker-name (workers-union/new-unionized-worker)))))
 
@@ -61,6 +66,7 @@
   ^{:doc "Shutdown Bluecollar for a client application"}
   [] 
   (keys-qs/setup-prefix nil)
+  (keys-qs/setup-postfix nil)
   (redis/shutdown)
   (reset! workers-union/registered-workers {}))
 
