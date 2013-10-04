@@ -5,6 +5,7 @@
 * Upgraded to carmine 2.2.3 from 1.8.0 and removed usages of deprecated API
 * Improving the MasterQueue to not use excessive Redis connections by maintaining a singular pool 
   that is sized appropriately to the number of workers it has, just as a Foreman does. 
+* Fixed a defect in bluecollar-client-startup where the :redis-key-postfix option was being ignored.
 
 ## 1.0.0 - Sept 28, 2013
 
