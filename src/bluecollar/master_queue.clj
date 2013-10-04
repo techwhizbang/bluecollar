@@ -8,7 +8,7 @@
             [cheshire.core :as json]
             [clojure.tools.logging :as logger]))
 
-(defrecord MasterQueue [worker-count continue-running])
+(defrecord MasterQueue [worker-count redis-conn continue-running])
 
 (defn- handler [job-plan-json]
   (logger/debug "What is this here" job-plan-json)
@@ -35,16 +35,17 @@
   (startup [this] 
     (logger/info "Starting the MasterQueue")
     
+    (reset! (:redis-conn this) (redis/new-connection redis/config (:worker-count this)))
+
     (dotimes [x (:worker-count this)]
-      (let [new-redis-conn (redis/new-connection)]
-        (future
-          (while @(:continue-running this)
-            (try
-              (handler (redis/brpop keys-qs/master-queue-name 1 new-redis-conn))
-              (catch Exception ex
-                (logger/error ex)))
-            )))
-    ))
+      (future
+        (while @(:continue-running this)
+          (try
+            (handler (redis/brpop keys-qs/master-queue-name 1 @(:redis-conn this)))
+            (catch Exception ex
+              (logger/error ex)))
+          )))
+    )
 
   (shutdown [this]
     (logger/info "Stopping the MasterQueue")
@@ -53,4 +54,4 @@
 
 (defn new-master-queue 
   ([] (new-master-queue 1))
-  ([worker-count] (->MasterQueue worker-count (atom true))))
+  ([worker-count] (->MasterQueue worker-count (atom nil) (atom true))))
