@@ -1,5 +1,6 @@
 (ns bluecollar.redis
   (:require [taoensso.carmine :as redis-client]
+            [taoensso.carmine.connections :as redis-conn]
             [bluecollar.keys-and-queues :as keys-qs])
   (:refer-clojure :exclude [pop]))
 
@@ -13,7 +14,7 @@
   (reset! config redis-configs))
 
 (defmacro with-redis-conn [redis-connection & body]
-  `(redis-client/with-conn (:pool ~redis-connection) (:settings ~redis-connection) ~@body))
+  `(redis-client/wcar {:pool (:pool ~redis-connection) :spec (:settings ~redis-connection)} ~@body))
 
 (defmacro with-transaction [& body]
   `(with-redis-conn (deref pool-and-settings) (redis-client/multi) ~@body (redis-client/exec)))
@@ -21,14 +22,14 @@
 (defmulti redis-settings (fn [config] (type config)))
 
 (defmethod redis-settings clojure.lang.APersistentMap [{:keys [host port timeout db]}] 
-  (redis-client/make-conn-spec :host host :timeout timeout :port port :db db))
+  (redis-conn/conn-spec {:host host :timeout timeout :port port :db db}))
 
 (defmethod redis-settings clojure.lang.Atom [config]
   (redis-settings @config))
 
 (defn redis-pool 
   ([] (redis-pool 10))
-  ([pool-size] (redis-client/make-conn-pool :max-total -1 :min-idle pool-size :max-active pool-size)))
+  ([pool-size] (redis-conn/conn-pool {:max-total -1 :min-idle pool-size :max-active pool-size})))
 
 (defn startup
   ([] (startup @config))
