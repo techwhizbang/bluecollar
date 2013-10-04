@@ -1,12 +1,5 @@
-# RC checklist
-* Wiki pages
-* Functional and load testing
-    * Ensure reliability and recoverability is sound.
-    * Do an example setup of separating bluecollar.client and bluecollar.core distributing bluecollar.core on multiple servers
-* Official domain name, logo, and a nicely styled static "homepage" hosted on Github.
-    * Need to get a designer interested for the homepage.
-
 # future releases
+* Need to get a designer interested for the homepage and dashboard.
 * A dashboard UI with the following:
     * Monitor number of workers busy
     * Monitor number of workers idle
