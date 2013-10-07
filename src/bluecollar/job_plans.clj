@@ -1,11 +1,13 @@
 (ns bluecollar.job-plans
-  (:require [cheshire.core :as json]
-            [clj-time.core :as time]
-            [clj-time.coerce :as time-coerce]
-            [clj-time.format :as time-parser]
-            [bluecollar.workers-union :as workers-union]
-            [bluecollar.redis :as redis]
-            [bluecollar.keys-and-queues :as keys-and-qs]
+  (:require [bluecollar
+              (workers-union   :as workers-union)
+              (redis           :as redis)
+              (keys-and-queues :as keys-and-qs)]
+            [clj-time
+              (core   :as time)
+              (coerce :as time-coerce)
+              (format :as time-parser)]
+            [cheshire.core :as json]
             [clojure.tools.logging :as logger]))
 
 (defprotocol Schedulable
