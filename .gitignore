@@ -14,3 +14,4 @@ pom.xml.asc
 *.rdb
 .idea/*
 bluecollar.iml
+.DS_Store
