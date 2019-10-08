@@ -8,6 +8,9 @@ jobs:
     docker:
       # specify the version you desire here
       - image: circleci/clojure:lein-2.7.1
+      
+      # Add Redis
+      - image: circleci/redis:5.0.6-alpine3.10
 
     working_directory: ~/repo
 
